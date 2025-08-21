@@ -257,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate AI content with enhanced parameters
+  // Generate AI content with enhanced parameters (supports text, image, and video via Vertex AI)
   app.post("/api/ai/generate", async (req, res) => {
     try {
       const {
@@ -270,15 +270,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         platform,
         isAdvertisement,
         additionalContext,
+        mediaType,
         generateImage,
+        generateVideo,
         visualStyle,
         colorScheme,
+        imagePrompt: userImagePrompt,
+        videoPrompt,
+        videoDuration,
+        videoTextOverlay,
       } = req.body;
 
-      // Import AI generation functions
-      const { generateTextContent, generateImage: generateAIImage } = await import('./gcloud-ai.js');
+      // Import AI generation functions from Google Cloud AI
+      const { generateTextContent, generateImage: generateAIImage, generateVideo: generateAIVideo } = await import('./gcloud-ai.js');
       
-      // Generate text content
+      // Always generate text content
       const content = await generateTextContent({
         businessName,
         productName,
@@ -292,23 +298,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       let imageUrl = null;
-      let imagePrompt = null;
+      let videoUrl = null;
+      let generatedImagePrompt = null;
 
-      // Generate image if requested
-      if (generateImage) {
-        imagePrompt = `${businessName} ${productName || ''} advertisement for ${targetAudience || 'target audience'}`;
+      // Generate media based on mediaType
+      if (mediaType === "image" || generateImage) {
+        // Generate image using Imagen4
+        const imageDescriptionPrompt = userImagePrompt || 
+          `Create a ${visualStyle || 'modern'} image for ${businessName} ${productName ? `featuring ${productName}` : ''}. 
+           Target audience: ${targetAudience || 'general audience'}. 
+           ${isAdvertisement ? 'Advertisement style' : 'Organic social media style'}. 
+           ${additionalContext || ''}`;
+        
+        generatedImagePrompt = imageDescriptionPrompt;
+        
         imageUrl = await generateAIImage({
-          prompt: imagePrompt,
+          prompt: imageDescriptionPrompt,
           visualStyle: visualStyle || 'modern',
           colorScheme,
+          businessContext: `${businessName} - ${productName || 'business'}`,
+          aspectRatio: platform === 'Instagram' ? '1:1' : '16:9',
+        });
+      } else if (mediaType === "video" || generateVideo) {
+        // Generate video using Veo3 Fast
+        const videoDescriptionPrompt = videoPrompt || userImagePrompt || 
+          `Create a ${videoDuration || 15}-second ${visualStyle || 'modern'} video for ${businessName} ${productName ? `showcasing ${productName}` : ''}. 
+           Target audience: ${targetAudience || 'general audience'}. 
+           ${isAdvertisement ? 'Advertisement format' : 'Organic social media format'}. 
+           ${videoTextOverlay ? `Include text overlay: ${videoTextOverlay}` : ''}
+           ${additionalContext || ''}`;
+        
+        videoUrl = await generateAIVideo({
+          prompt: videoDescriptionPrompt,
+          duration: videoDuration || 15,
+          visualStyle: visualStyle || 'modern',
+          includeText: videoTextOverlay,
           businessContext: `${businessName} - ${productName || 'business'}`,
         });
       }
       
-      res.json({ content, imageUrl, imagePrompt });
+      res.json({ 
+        content, 
+        imageUrl, 
+        videoUrl,
+        imagePrompt: generatedImagePrompt,
+        mediaType: mediaType || 'text',
+      });
     } catch (error) {
       console.error('AI generation error:', error);
-      res.status(500).json({ message: "Failed to generate AI content" });
+      res.status(500).json({ message: "Failed to generate AI content", error: error.message });
     }
   });
 

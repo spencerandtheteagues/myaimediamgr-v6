@@ -10,11 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bot, Bold, Italic, Link as LinkIcon, Image, Wand2, Target, Palette, Building2, MessageSquare, Megaphone, Sparkles } from "lucide-react";
+import { Bot, Bold, Italic, Link as LinkIcon, Image, Wand2, Target, Palette, Building2, MessageSquare, Megaphone, Sparkles, FileText, Video, ImageIcon, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import PlatformSelector from "../components/content/platform-selector";
 import AiSuggestions from "../components/content/ai-suggestions";
+import PlatformPreview from "../components/content/platform-preview";
 
 export default function CreateContent() {
   const [content, setContent] = useState("");
@@ -33,11 +34,16 @@ export default function CreateContent() {
   const [isAdvertisement, setIsAdvertisement] = useState(true);
   const [additionalContext, setAdditionalContext] = useState("");
   
+  // Media type selection
+  const [mediaType, setMediaType] = useState<"text" | "image" | "video">("text");
+  
   // Visual generation fields
   const [generateVisuals, setGenerateVisuals] = useState(false);
   const [visualStyle, setVisualStyle] = useState("modern");
   const [colorScheme, setColorScheme] = useState("");
   const [imagePrompt, setImagePrompt] = useState("");
+  const [videoDuration, setVideoDuration] = useState(15);
+  const [videoTextOverlay, setVideoTextOverlay] = useState("");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -82,13 +88,30 @@ export default function CreateContent() {
       return response.json();
     },
     onSuccess: (data) => {
-      setContent(data.content);
+      // Always set the text content
+      if (data.content) {
+        setContent(data.content);
+      }
+      
+      // Handle different media types
       if (data.imageUrl) {
         setImagePrompt(data.imagePrompt || "");
       }
+      
+      let description = "AI has created ";
+      if (data.mediaType === "text") {
+        description += "text content";
+      } else if (data.mediaType === "image" && data.imageUrl) {
+        description += "text content with an image";
+      } else if (data.mediaType === "video" && data.videoUrl) {
+        description += "text content with a video";
+      } else {
+        description += "content";
+      }
+      
       toast({
-        title: "Content Generated",
-        description: "AI has created optimized content for your platforms",
+        title: "✨ Content Generated Successfully",
+        description: `${description} optimized for ${selectedPlatforms[0] || 'your platform'}`,
       });
     },
     onError: () => {
@@ -128,6 +151,7 @@ export default function CreateContent() {
       status,
       aiGenerated: true,
       scheduledFor: scheduleOption === "later" ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null,
+      mediaType,
       metadata: {
         businessName,
         productName,
@@ -139,6 +163,8 @@ export default function CreateContent() {
         visualStyle,
         colorScheme,
         imagePrompt,
+        videoDuration,
+        videoTextOverlay,
       }
     });
   };
@@ -153,7 +179,7 @@ export default function CreateContent() {
       return;
     }
 
-    generateAiContentMutation.mutate({
+    const params: any = {
       businessName,
       productName,
       targetAudience,
@@ -163,10 +189,22 @@ export default function CreateContent() {
       platform: selectedPlatforms[0] || 'Instagram',
       isAdvertisement,
       additionalContext,
-      generateImage: generateVisuals,
+      mediaType,
       visualStyle,
       colorScheme,
-    });
+    };
+
+    if (mediaType === "image") {
+      params.generateImage = true;
+      params.imagePrompt = imagePrompt;
+    } else if (mediaType === "video") {
+      params.generateVideo = true;
+      params.videoDuration = videoDuration;
+      params.videoTextOverlay = videoTextOverlay;
+      params.videoPrompt = imagePrompt; // Using imagePrompt field for video description
+    }
+
+    generateAiContentMutation.mutate(params);
   };
 
   const handleSelectSuggestion = (suggestion: string) => {
@@ -295,25 +333,41 @@ export default function CreateContent() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Palette className="w-5 h-5 text-primary" />
-                  Visual Preferences
+                  Media Generation
                 </CardTitle>
                 <CardDescription>
-                  Define the visual style for AI-generated images
+                  Choose what type of content to generate with AI
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="generateVisuals"
-                    checked={generateVisuals}
-                    onCheckedChange={setGenerateVisuals}
-                  />
-                  <Label htmlFor="generateVisuals" className="cursor-pointer">
-                    Generate AI Images with Content
-                  </Label>
+                <div>
+                  <Label>Media Type</Label>
+                  <RadioGroup value={mediaType} onValueChange={(value: any) => setMediaType(value)} className="mt-2">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="text" id="text" />
+                      <Label htmlFor="text" className="flex items-center gap-2 cursor-pointer">
+                        <FileText className="w-4 h-4" />
+                        Text Only (Gemini 2.5 Flash)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="image" id="image" />
+                      <Label htmlFor="image" className="flex items-center gap-2 cursor-pointer">
+                        <ImageIcon className="w-4 h-4" />
+                        Text + Image (Gemini + Imagen4)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="video" id="video" />
+                      <Label htmlFor="video" className="flex items-center gap-2 cursor-pointer">
+                        <Video className="w-4 h-4" />
+                        Text + Video (Gemini + Veo3 Fast)
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
-                {generateVisuals && (
+                {(mediaType === "image" || mediaType === "video") && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -344,16 +398,58 @@ export default function CreateContent() {
                         />
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor="imagePrompt">Additional Image Instructions</Label>
-                      <Textarea
-                        id="imagePrompt"
-                        value={imagePrompt}
-                        onChange={(e) => setImagePrompt(e.target.value)}
-                        placeholder="Describe specific visual elements you want in the image..."
-                        className="mt-1 h-20"
-                      />
-                    </div>
+                    
+                    {mediaType === "image" && (
+                      <div>
+                        <Label htmlFor="imagePrompt">Image Description</Label>
+                        <Textarea
+                          id="imagePrompt"
+                          value={imagePrompt}
+                          onChange={(e) => setImagePrompt(e.target.value)}
+                          placeholder="Describe specific visual elements you want in the image..."
+                          className="mt-1 h-20"
+                        />
+                      </div>
+                    )}
+                    
+                    {mediaType === "video" && (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="videoDuration">Video Duration (seconds)</Label>
+                            <Input
+                              id="videoDuration"
+                              type="number"
+                              min="5"
+                              max="30"
+                              value={videoDuration}
+                              onChange={(e) => setVideoDuration(parseInt(e.target.value) || 15)}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="videoTextOverlay">Text Overlay</Label>
+                            <Input
+                              id="videoTextOverlay"
+                              value={videoTextOverlay}
+                              onChange={(e) => setVideoTextOverlay(e.target.value)}
+                              placeholder="e.g., Limited Time Offer"
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="imagePrompt">Video Scene Description</Label>
+                          <Textarea
+                            id="imagePrompt"
+                            value={imagePrompt}
+                            onChange={(e) => setImagePrompt(e.target.value)}
+                            placeholder="Describe the scenes and visual elements for your video..."
+                            className="mt-1 h-20"
+                          />
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </CardContent>
@@ -389,7 +485,10 @@ export default function CreateContent() {
                     size="sm"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
-                    {generateAiContentMutation.isPending ? "Generating..." : "Generate with AI"}
+                    {generateAiContentMutation.isPending ? 
+                      `Generating ${mediaType}...` : 
+                      `Generate ${mediaType === 'text' ? 'Text' : mediaType === 'image' ? 'Text + Image' : 'Text + Video'}`
+                    }
                   </Button>
                 </div>
                 
@@ -417,6 +516,27 @@ export default function CreateContent() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Platform Previews - Show below content editor */}
+            {selectedPlatforms.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-primary" />
+                  Platform Previews
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedPlatforms.map((platform) => (
+                    <PlatformPreview
+                      key={platform}
+                      platform={platform}
+                      content={content}
+                      businessName={businessName || "Your Business"}
+                      imageUrl={mediaType === "image" ? "https://via.placeholder.com/1080x1080/9333ea/ffffff?text=AI+Generated+Image" : undefined}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Sidebar */}
@@ -451,41 +571,6 @@ export default function CreateContent() {
                 </CardContent>
               </Card>
             )}
-
-            {/* Platform Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Platform Preview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue={selectedPlatforms[0] || "Instagram"}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    {selectedPlatforms.slice(0, 2).map((platform) => (
-                      <TabsTrigger key={platform} value={platform}>
-                        {platform}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  {selectedPlatforms.map((platform) => (
-                    <TabsContent key={platform} value={platform}>
-                      <div className="bg-muted p-4 rounded-lg">
-                        <div className="text-sm text-muted-foreground mb-2">
-                          {platform} Preview
-                        </div>
-                        <div className="bg-background p-3 rounded">
-                          {content || `Your ${platform} optimized content will appear here...`}
-                        </div>
-                        {platform === "Twitter" && content.length > 280 && (
-                          <Badge variant="destructive" className="mt-2">
-                            {content.length}/280 characters
-                          </Badge>
-                        )}
-                      </div>
-                    </TabsContent>
-                  ))}
-                </Tabs>
-              </CardContent>
-            </Card>
 
             {/* Schedule Options */}
             <Card>
