@@ -1,5 +1,4 @@
 import { VertexAI, HarmCategory, HarmBlockThreshold } from '@google-cloud/vertexai';
-import { GoogleGenerativeAI } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
 import { v4 as uuidv4 } from 'uuid';
 import sharp from 'sharp';
@@ -14,9 +13,8 @@ ffmpeg.setFfmpegPath(ffmpegPath.path);
 // Check if Google Cloud configuration is available
 const isGoogleCloudConfigured = !!(process.env.GCLOUD_PROJECT_ID && process.env.GCLOUD_PROJECT_ID !== '');
 
-// Initialize Vertex AI and Gemini AI only if configured
+// Initialize Vertex AI only if configured
 let vertexAI: VertexAI | null = null;
-let genAI: GoogleGenerativeAI | null = null;
 let storage: Storage | null = null;
 let bucket: any = null;
 let geminiFlashModel: any = null;
@@ -34,10 +32,6 @@ if (isGoogleCloudConfigured) {
       location: process.env.GCLOUD_LOCATION || 'us-central1',
     });
 
-    // Initialize Gemini AI SDK for alternative access
-    if (process.env.GEMINI_API_KEY) {
-      genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    }
 
     // Initialize Cloud Storage
     storage = new Storage({
@@ -204,18 +198,6 @@ ${request.callToAction}
     return text || 'Failed to generate content';
   } catch (error) {
     console.error('Error generating text content:', error);
-    // Fallback to Gemini API if available
-    if (genAI) {
-      try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await model.generateContent(systemPrompt);
-        const response = await result.response;
-        const text = response.text();
-        return text || 'Failed to generate content';
-      } catch (fallbackError) {
-        console.error('Fallback Gemini API also failed:', fallbackError);
-      }
-    }
     throw new Error('Failed to generate text content');
   }
 }

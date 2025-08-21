@@ -35,7 +35,11 @@ const CREDIT_COSTS = {
 
 export default function Pricing() {
   const { toast } = useToast();
-  const { data: user } = useQuery({ queryKey: ["/api/auth/user"] });
+  const { data: user } = useQuery({ 
+    queryKey: ["/api/auth/user"],
+    retry: false,
+    enabled: false // Don't automatically fetch user data
+  });
   const { data: plans = [], isLoading } = useQuery<SubscriptionPlan[]>({
     queryKey: ["/api/subscription-plans"],
   });
