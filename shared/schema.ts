@@ -1,16 +1,36 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean, json, integer, real, date } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, json, jsonb, integer, real, date, decimal, index, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
+// Session storage table for OAuth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// Users table with OAuth and credit system
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  fullName: text("full_name").notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
   businessName: text("business_name"),
-  avatar: text("avatar"),
+  // Credit system fields
+  credits: integer("credits").notNull().default(50), // Start with 50 free credits
+  subscriptionId: varchar("subscription_id"),
+  subscriptionStatus: varchar("subscription_status").default("free"), // free, trial, active, cancelled, expired
+  subscriptionEndDate: timestamp("subscription_end_date"),
+  totalCreditsUsed: integer("total_credits_used").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const platforms = pgTable("platforms", {
@@ -96,13 +116,73 @@ export const analytics = pgTable("analytics", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Subscription Plans
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: varchar("id").primaryKey(),
+  name: varchar("name").notNull(),
+  displayName: varchar("display_name").notNull(),
+  monthlyPrice: decimal("monthly_price", { precision: 10, scale: 2 }).notNull(),
+  yearlyPrice: decimal("yearly_price", { precision: 10, scale: 2 }).notNull(),
+  creditsPerMonth: integer("credits_per_month").notNull(),
+  features: json("features").$type<string[]>().notNull(),
+  maxPlatforms: integer("max_platforms").notNull(),
+  analyticsAccess: boolean("analytics_access").notNull().default(false),
+  aiSuggestions: boolean("ai_suggestions").notNull().default(false),
+  prioritySupport: boolean("priority_support").notNull().default(false),
+  teamMembers: integer("team_members").notNull().default(1),
+  videoGeneration: boolean("video_generation").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User Subscriptions
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  planId: varchar("plan_id").notNull().references(() => subscriptionPlans.id),
+  status: varchar("status").notNull(), // active, cancelled, expired, trial
+  billingCycle: varchar("billing_cycle").notNull(), // monthly, yearly
+  startDate: timestamp("start_date").notNull().defaultNow(),
+  endDate: timestamp("end_date").notNull(),
+  cancelledAt: timestamp("cancelled_at"),
+  nextBillingDate: timestamp("next_billing_date"),
+  autoRenew: boolean("auto_renew").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Credit Transactions
+export const creditTransactions = pgTable("credit_transactions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  amount: integer("amount").notNull(), // positive for credits added, negative for credits used
+  balance: integer("balance").notNull(), // balance after transaction
+  type: varchar("type").notNull(), // purchase, subscription, usage, refund, bonus
+  description: text("description").notNull(),
+  metadata: json("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Usage Tracking
+export const usageTracking = pgTable("usage_tracking", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  featureType: varchar("feature_type").notNull(), // text_generation, image_generation, video_generation, post_scheduling
+  creditsUsed: integer("credits_used").notNull(),
+  metadata: json("metadata").$type<Record<string, any>>(),
+  postId: varchar("post_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  fullName: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  profileImageUrl: true,
   businessName: true,
-  avatar: true,
+  credits: true,
+  subscriptionId: true,
+  subscriptionStatus: true,
+  subscriptionEndDate: true,
 });
 
 export const insertPlatformSchema = createInsertSchema(platforms).pick({
@@ -165,9 +245,55 @@ export const insertAnalyticsSchema = createInsertSchema(analytics).pick({
   date: true,
 });
 
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).pick({
+  id: true,
+  name: true,
+  displayName: true,
+  monthlyPrice: true,
+  yearlyPrice: true,
+  creditsPerMonth: true,
+  features: true,
+  maxPlatforms: true,
+  analyticsAccess: true,
+  aiSuggestions: true,
+  prioritySupport: true,
+  teamMembers: true,
+  videoGeneration: true,
+});
+
+export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions).pick({
+  userId: true,
+  planId: true,
+  status: true,
+  billingCycle: true,
+  startDate: true,
+  endDate: true,
+  cancelledAt: true,
+  nextBillingDate: true,
+  autoRenew: true,
+});
+
+export const insertCreditTransactionSchema = createInsertSchema(creditTransactions).pick({
+  userId: true,
+  amount: true,
+  balance: true,
+  type: true,
+  description: true,
+  metadata: true,
+});
+
+export const insertUsageTrackingSchema = createInsertSchema(usageTracking).pick({
+  userId: true,
+  featureType: true,
+  creditsUsed: true,
+  metadata: true,
+  postId: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 export type Platform = typeof platforms.$inferSelect;
 export type InsertPlatform = z.infer<typeof insertPlatformSchema>;
 export type Campaign = typeof campaigns.$inferSelect;
@@ -178,3 +304,46 @@ export type AiSuggestion = typeof aiSuggestions.$inferSelect;
 export type InsertAiSuggestion = z.infer<typeof insertAiSuggestionSchema>;
 export type Analytics = typeof analytics.$inferSelect;
 export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
+export type CreditTransaction = typeof creditTransactions.$inferSelect;
+export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
+export type UsageTracking = typeof usageTracking.$inferSelect;
+export type InsertUsageTracking = z.infer<typeof insertUsageTrackingSchema>;
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  posts: many(posts),
+  platforms: many(platforms),
+  campaigns: many(campaigns),
+  subscriptions: many(userSubscriptions),
+  creditTransactions: many(creditTransactions),
+  usageTracking: many(usageTracking),
+}));
+
+export const userSubscriptionsRelations = relations(userSubscriptions, ({ one }) => ({
+  user: one(users, {
+    fields: [userSubscriptions.userId],
+    references: [users.id],
+  }),
+  plan: one(subscriptionPlans, {
+    fields: [userSubscriptions.planId],
+    references: [subscriptionPlans.id],
+  }),
+}));
+
+export const creditTransactionsRelations = relations(creditTransactions, ({ one }) => ({
+  user: one(users, {
+    fields: [creditTransactions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const usageTrackingRelations = relations(usageTracking, ({ one }) => ({
+  user: one(users, {
+    fields: [usageTracking.userId],
+    references: [users.id],
+  }),
+}));

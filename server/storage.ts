@@ -1,11 +1,24 @@
-import { type User, type InsertUser, type Platform, type InsertPlatform, type Post, type InsertPost, type AiSuggestion, type InsertAiSuggestion, type Analytics, type InsertAnalytics, type Campaign, type InsertCampaign } from "@shared/schema";
+import { 
+  type User, type InsertUser, type UpsertUser,
+  type Platform, type InsertPlatform, 
+  type Post, type InsertPost, 
+  type AiSuggestion, type InsertAiSuggestion, 
+  type Analytics, type InsertAnalytics, 
+  type Campaign, type InsertCampaign,
+  type SubscriptionPlan, type InsertSubscriptionPlan,
+  type UserSubscription, type InsertUserSubscription,
+  type CreditTransaction, type InsertCreditTransaction,
+  type UsageTracking, type InsertUsageTracking
+} from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  updateUserCredits(userId: string, creditChange: number, description: string, type: string): Promise<User | undefined>;
   
   // Platforms
   getPlatformsByUserId(userId: string): Promise<Platform[]>;
@@ -36,6 +49,23 @@ export interface IStorage {
   getAnalyticsByUserId(userId: string): Promise<Analytics[]>;
   getAnalyticsByUserAndDateRange(userId: string, startDate: Date, endDate: Date): Promise<Analytics[]>;
   createAnalytics(analytics: InsertAnalytics): Promise<Analytics>;
+  
+  // Subscription Plans
+  getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+  getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined>;
+  
+  // User Subscriptions
+  getUserSubscription(userId: string): Promise<UserSubscription | undefined>;
+  createUserSubscription(subscription: InsertUserSubscription): Promise<UserSubscription>;
+  updateUserSubscription(id: string, updates: Partial<UserSubscription>): Promise<UserSubscription | undefined>;
+  
+  // Credit Transactions
+  getCreditTransactionsByUserId(userId: string): Promise<CreditTransaction[]>;
+  createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction>;
+  
+  // Usage Tracking
+  getUsageByUserId(userId: string): Promise<UsageTracking[]>;
+  createUsageTracking(usage: InsertUsageTracking): Promise<UsageTracking>;
 }
 
 export class MemStorage implements IStorage {
@@ -45,6 +75,10 @@ export class MemStorage implements IStorage {
   private posts: Map<string, Post>;
   private aiSuggestions: Map<string, AiSuggestion>;
   private analytics: Map<string, Analytics>;
+  private subscriptionPlans: Map<string, SubscriptionPlan>;
+  private userSubscriptions: Map<string, UserSubscription>;
+  private creditTransactions: Map<string, CreditTransaction>;
+  private usageTracking: Map<string, UsageTracking>;
 
   constructor() {
     this.users = new Map();
@@ -53,21 +87,32 @@ export class MemStorage implements IStorage {
     this.posts = new Map();
     this.aiSuggestions = new Map();
     this.analytics = new Map();
+    this.subscriptionPlans = new Map();
+    this.userSubscriptions = new Map();
+    this.creditTransactions = new Map();
+    this.usageTracking = new Map();
     
     // Initialize with demo user and data
     this.initializeDemoData();
+    this.initializeSubscriptionPlans();
   }
 
   private initializeDemoData() {
     // Create demo user
     const demoUser: User = {
       id: "demo-user-1",
-      username: "sarah.johnson",
-      password: "demo123",
-      fullName: "Sarah Johnson",
+      email: "demo@example.com",
+      firstName: "Demo",
+      lastName: "User",
+      profileImageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&w=40&h=40&fit=crop",
       businessName: "Sarah's Corner Café",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&w=40&h=40&fit=crop",
+      credits: 500, // Start with 500 free credits
+      subscriptionId: "starter",
+      subscriptionStatus: "active",
+      subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      totalCreditsUsed: 0,
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
     this.users.set(demoUser.id, demoUser);
 
@@ -213,26 +258,200 @@ export class MemStorage implements IStorage {
     posts.forEach(post => this.posts.set(post.id, post));
   }
 
+  private initializeSubscriptionPlans() {
+    const plans: SubscriptionPlan[] = [
+      {
+        id: "free",
+        name: "free",
+        displayName: "Free Trial",
+        monthlyPrice: "0.00",
+        yearlyPrice: "0.00",
+        creditsPerMonth: 50,
+        features: [
+          "50 credits per month",
+          "Basic AI content generation",
+          "2 social media platforms",
+          "Basic analytics"
+        ],
+        maxPlatforms: 2,
+        analyticsAccess: true,
+        aiSuggestions: true,
+        prioritySupport: false,
+        teamMembers: 1,
+        videoGeneration: false,
+        createdAt: new Date(),
+      },
+      {
+        id: "starter",
+        name: "starter",
+        displayName: "Starter",
+        monthlyPrice: "29.00",
+        yearlyPrice: "290.00",
+        creditsPerMonth: 500,
+        features: [
+          "500 credits per month",
+          "Advanced AI content generation",
+          "5 social media platforms",
+          "Detailed analytics",
+          "Image generation (10 per month)",
+          "Priority email support"
+        ],
+        maxPlatforms: 5,
+        analyticsAccess: true,
+        aiSuggestions: true,
+        prioritySupport: true,
+        teamMembers: 1,
+        videoGeneration: false,
+        createdAt: new Date(),
+      },
+      {
+        id: "professional",
+        name: "professional",
+        displayName: "Professional",
+        monthlyPrice: "99.00",
+        yearlyPrice: "990.00",
+        creditsPerMonth: 2000,
+        features: [
+          "2,000 credits per month",
+          "Premium AI content generation",
+          "Unlimited social media platforms",
+          "Advanced analytics & reporting",
+          "Image generation (50 per month)",
+          "Video generation (5 per month)",
+          "Priority phone & email support",
+          "3 team members"
+        ],
+        maxPlatforms: 999,
+        analyticsAccess: true,
+        aiSuggestions: true,
+        prioritySupport: true,
+        teamMembers: 3,
+        videoGeneration: true,
+        createdAt: new Date(),
+      },
+      {
+        id: "enterprise",
+        name: "enterprise",
+        displayName: "Enterprise",
+        monthlyPrice: "299.00",
+        yearlyPrice: "2990.00",
+        creditsPerMonth: 10000,
+        features: [
+          "10,000 credits per month",
+          "Enterprise AI features",
+          "Unlimited everything",
+          "Custom analytics dashboards",
+          "Unlimited image generation",
+          "Video generation (50 per month)",
+          "Dedicated account manager",
+          "24/7 priority support",
+          "Unlimited team members",
+          "API access",
+          "Custom integrations"
+        ],
+        maxPlatforms: 999,
+        analyticsAccess: true,
+        aiSuggestions: true,
+        prioritySupport: true,
+        teamMembers: 999,
+        videoGeneration: true,
+        createdAt: new Date(),
+      },
+    ];
+
+    plans.forEach(plan => this.subscriptionPlans.set(plan.id, plan));
+  }
+
   // Users
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(user => user.email === email);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     const user: User = { 
-      ...insertUser, 
       id,
+      email: insertUser.email ?? null,
+      firstName: insertUser.firstName ?? null,
+      lastName: insertUser.lastName ?? null,
+      profileImageUrl: insertUser.profileImageUrl ?? null,
       businessName: insertUser.businessName ?? null,
-      avatar: insertUser.avatar ?? null,
+      credits: insertUser.credits ?? 50,
+      subscriptionId: insertUser.subscriptionId ?? "free",
+      subscriptionStatus: insertUser.subscriptionStatus ?? "free",
+      subscriptionEndDate: insertUser.subscriptionEndDate ?? null,
+      totalCreditsUsed: 0,
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
     this.users.set(id, user);
     return user;
+  }
+
+  async upsertUser(upsertUser: UpsertUser): Promise<User> {
+    // Check if user exists
+    const existingUser = upsertUser.id ? await this.getUser(upsertUser.id) : null;
+    
+    if (existingUser) {
+      // Update existing user
+      const updatedUser = {
+        ...existingUser,
+        ...upsertUser,
+        updatedAt: new Date(),
+      };
+      this.users.set(existingUser.id, updatedUser);
+      return updatedUser;
+    } else {
+      // Create new user
+      const id = upsertUser.id || randomUUID();
+      const newUser: User = {
+        id,
+        email: upsertUser.email ?? null,
+        firstName: upsertUser.firstName ?? null,
+        lastName: upsertUser.lastName ?? null,
+        profileImageUrl: upsertUser.profileImageUrl ?? null,
+        businessName: upsertUser.businessName ?? null,
+        credits: upsertUser.credits ?? 50,
+        subscriptionId: upsertUser.subscriptionId ?? "free",
+        subscriptionStatus: upsertUser.subscriptionStatus ?? "free",
+        subscriptionEndDate: upsertUser.subscriptionEndDate ?? null,
+        totalCreditsUsed: upsertUser.totalCreditsUsed ?? 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.users.set(id, newUser);
+      return newUser;
+    }
+  }
+
+  async updateUserCredits(userId: string, creditChange: number, description: string, type: string): Promise<User | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+
+    const newCredits = user.credits + creditChange;
+    const updatedUser = {
+      ...user,
+      credits: newCredits,
+      totalCreditsUsed: creditChange < 0 ? user.totalCreditsUsed + Math.abs(creditChange) : user.totalCreditsUsed,
+      updatedAt: new Date(),
+    };
+    this.users.set(userId, updatedUser);
+
+    // Create credit transaction
+    await this.createCreditTransaction({
+      userId,
+      amount: creditChange,
+      balance: newCredits,
+      type,
+      description,
+      metadata: null,
+    });
+
+    return updatedUser;
   }
 
   // Platforms
@@ -407,6 +626,77 @@ export class MemStorage implements IStorage {
     };
     this.analytics.set(id, analytics);
     return analytics;
+  }
+
+  // Subscription Plans
+  async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return Array.from(this.subscriptionPlans.values());
+  }
+
+  async getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined> {
+    return this.subscriptionPlans.get(id);
+  }
+
+  // User Subscriptions
+  async getUserSubscription(userId: string): Promise<UserSubscription | undefined> {
+    return Array.from(this.userSubscriptions.values())
+      .find(sub => sub.userId === userId && sub.status === "active");
+  }
+
+  async createUserSubscription(subscription: InsertUserSubscription): Promise<UserSubscription> {
+    const id = randomUUID();
+    const userSub: UserSubscription = {
+      ...subscription,
+      id,
+      createdAt: new Date(),
+    };
+    this.userSubscriptions.set(id, userSub);
+    return userSub;
+  }
+
+  async updateUserSubscription(id: string, updates: Partial<UserSubscription>): Promise<UserSubscription | undefined> {
+    const subscription = this.userSubscriptions.get(id);
+    if (!subscription) return undefined;
+    
+    const updated = { ...subscription, ...updates };
+    this.userSubscriptions.set(id, updated);
+    return updated;
+  }
+
+  // Credit Transactions
+  async getCreditTransactionsByUserId(userId: string): Promise<CreditTransaction[]> {
+    return Array.from(this.creditTransactions.values())
+      .filter(t => t.userId === userId)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+  }
+
+  async createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction> {
+    const id = randomUUID();
+    const creditTx: CreditTransaction = {
+      ...transaction,
+      id,
+      createdAt: new Date(),
+    };
+    this.creditTransactions.set(id, creditTx);
+    return creditTx;
+  }
+
+  // Usage Tracking
+  async getUsageByUserId(userId: string): Promise<UsageTracking[]> {
+    return Array.from(this.usageTracking.values())
+      .filter(u => u.userId === userId)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+  }
+
+  async createUsageTracking(usage: InsertUsageTracking): Promise<UsageTracking> {
+    const id = randomUUID();
+    const usageTrack: UsageTracking = {
+      ...usage,
+      id,
+      createdAt: new Date(),
+    };
+    this.usageTracking.set(id, usageTrack);
+    return usageTrack;
   }
 }
 

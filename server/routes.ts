@@ -4,12 +4,32 @@ import { storage } from "./storage";
 import { insertPostSchema, insertAiSuggestionSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import * as gcloudAI from "./gcloud-ai";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Get current user (demo user for now)
-  app.get("/api/user", async (req, res) => {
+  // Setup authentication
+  await setupAuth(app);
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const user = await storage.getUser("demo-user-1");
+      const userId = req.user?.claims?.sub || 'demo-user-1';
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Get current user (fallback for old API)
+  app.get("/api/user", async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || "demo-user-1";
+      const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -19,10 +39,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user's connected platforms
-  app.get("/api/platforms", async (req, res) => {
+  // Get subscription plans
+  app.get("/api/subscription-plans", async (req, res) => {
     try {
-      const platforms = await storage.getPlatformsByUserId("demo-user-1");
+      const plans = await storage.getSubscriptionPlans();
+      res.json(plans);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get subscription plans" });
+    }
+  });
+
+  // Subscribe to a plan
+  app.post("/api/subscribe/:planId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || 'demo-user-1';
+      const { planId } = req.params;
+      const plan = await storage.getSubscriptionPlan(planId);
+      
+      if (!plan) {
+        return res.status(404).json({ message: "Plan not found" });
+      }
+
+      // Update user subscription
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Create subscription record
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1);
+      
+      await storage.createUserSubscription({
+        userId,
+        planId,
+        status: "active",
+        billingCycle: "monthly",
+        startDate: new Date(),
+        endDate,
+        nextBillingDate: endDate,
+        autoRenew: true,
+        cancelledAt: null,
+      });
+
+      // Update user with new subscription and add credits
+      await storage.updateUserCredits(
+        userId,
+        plan.creditsPerMonth,
+        `Subscription to ${plan.displayName} plan`,
+        "subscription"
+      );
+
+      res.json({ message: "Subscription successful", plan });
+    } catch (error) {
+      console.error("Subscription error:", error);
+      res.status(500).json({ message: "Failed to subscribe to plan" });
+    }
+  });
+
+  // Get user's credit transactions
+  app.get("/api/credits/transactions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || 'demo-user-1';
+      const transactions = await storage.getCreditTransactionsByUserId(userId);
+      res.json(transactions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get credit transactions" });
+    }
+  });
+
+  // Get user's usage tracking
+  app.get("/api/usage", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || 'demo-user-1';
+      const usage = await storage.getUsageByUserId(userId);
+      res.json(usage);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get usage data" });
+    }
+  });
+
+  // Get user's connected platforms
+  app.get("/api/platforms", async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || "demo-user-1";
+      const platforms = await storage.getPlatformsByUserId(userId);
       res.json(platforms);
     } catch (error) {
       res.status(500).json({ message: "Failed to get platforms" });
@@ -30,15 +131,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user's posts
-  app.get("/api/posts", async (req, res) => {
+  app.get("/api/posts", async (req: any, res) => {
     try {
+      const userId = req.user?.claims?.sub || "demo-user-1";
       const { status } = req.query;
       let posts;
       
       if (status && typeof status === "string") {
-        posts = await storage.getPostsByStatus("demo-user-1", status);
+        posts = await storage.getPostsByStatus(userId, status);
       } else {
-        posts = await storage.getPostsByUserId("demo-user-1");
+        posts = await storage.getPostsByUserId(userId);
       }
       
       res.json(posts);
@@ -48,9 +150,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get campaigns
-  app.get("/api/campaigns", async (req, res) => {
+  app.get("/api/campaigns", async (req: any, res) => {
     try {
-      const campaigns = await storage.getCampaignsByUserId("demo-user-1");
+      const userId = req.user?.claims?.sub || "demo-user-1";
+      const campaigns = await storage.getCampaignsByUserId(userId);
       res.json(campaigns);
     } catch (error) {
       res.status(500).json({ message: "Failed to get campaigns" });
@@ -81,11 +184,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create campaign
-  app.post("/api/campaigns", async (req, res) => {
+  app.post("/api/campaigns", async (req: any, res) => {
     try {
+      const userId = req.user?.claims?.sub || "demo-user-1";
       const campaignData = insertCampaignSchema.parse({
         ...req.body,
-        userId: "demo-user-1",
+        userId,
         startDate: req.body.startDate,
         endDate: req.body.endDate || new Date(new Date(req.body.startDate).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       });
@@ -182,11 +286,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new post
-  app.post("/api/posts", async (req, res) => {
+  app.post("/api/posts", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user?.claims?.sub || "demo-user-1";
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Calculate credit cost
+      let creditCost = 1; // Base cost for text post
+      if (req.body.aiGenerated) {
+        creditCost += 4; // Additional cost for AI generation
+      }
+      if (req.body.imageUrl && req.body.imagePrompt) {
+        creditCost += 45; // Cost for image generation (50 - 5 already counted)
+      }
+      if (req.body.videoUrl && req.body.videoPrompt) {
+        creditCost += 495; // Cost for video generation (500 - 5 already counted)
+      }
+
+      // Check if user has enough credits
+      if (user.credits < creditCost) {
+        return res.status(402).json({ 
+          message: "Insufficient credits", 
+          required: creditCost, 
+          available: user.credits 
+        });
+      }
+
       const postData = insertPostSchema.parse({
         ...req.body,
-        userId: "demo-user-1",
+        userId,
       });
       
       const post = await storage.createPost(postData);
