@@ -257,6 +257,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate AI content with enhanced parameters
+  app.post("/api/ai/generate", async (req, res) => {
+    try {
+      const {
+        businessName,
+        productName,
+        targetAudience,
+        brandTone,
+        keyMessages,
+        callToAction,
+        platform,
+        isAdvertisement,
+        additionalContext,
+        generateImage,
+        visualStyle,
+        colorScheme,
+      } = req.body;
+
+      // Import AI generation functions
+      const { generateTextContent, generateImage: generateAIImage } = await import('./gcloud-ai.js');
+      
+      // Generate text content
+      const content = await generateTextContent({
+        businessName,
+        productName,
+        targetAudience,
+        brandTone,
+        keyMessages: keyMessages || [],
+        callToAction,
+        platform,
+        isAdvertisement,
+        additionalContext,
+      });
+
+      let imageUrl = null;
+      let imagePrompt = null;
+
+      // Generate image if requested
+      if (generateImage) {
+        imagePrompt = `${businessName} ${productName || ''} advertisement for ${targetAudience || 'target audience'}`;
+        imageUrl = await generateAIImage({
+          prompt: imagePrompt,
+          visualStyle: visualStyle || 'modern',
+          colorScheme,
+          businessContext: `${businessName} - ${productName || 'business'}`,
+        });
+      }
+      
+      res.json({ content, imageUrl, imagePrompt });
+    } catch (error) {
+      console.error('AI generation error:', error);
+      res.status(500).json({ message: "Failed to generate AI content" });
+    }
+  });
+
   // Get dashboard analytics
   app.get("/api/analytics/dashboard", async (req, res) => {
     try {
