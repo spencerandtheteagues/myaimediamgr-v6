@@ -35,6 +35,7 @@ import {
   Sparkles
 } from "lucide-react";
 import type { Campaign, Post } from "@shared/schema";
+import PostCard from "@/components/content/post-card";
 
 const createCampaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
@@ -707,6 +708,20 @@ function CampaignPreviewDialog({
     queryClient.invalidateQueries({ queryKey: ["/api/campaigns", campaign.id, "posts"] });
   };
 
+  const handleApprovePost = async (postId: string) => {
+    await apiRequest("PATCH", `/api/posts/${postId}`, {
+      status: "approved",
+    });
+    queryClient.invalidateQueries({ queryKey: ["/api/campaigns", campaign.id, "posts"] });
+  };
+
+  const handleRejectPost = async (postId: string) => {
+    await apiRequest("PATCH", `/api/posts/${postId}`, {
+      status: "rejected",
+    });
+    queryClient.invalidateQueries({ queryKey: ["/api/campaigns", campaign.id, "posts"] });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh]">
@@ -718,94 +733,32 @@ function CampaignPreviewDialog({
         </DialogHeader>
 
         <ScrollArea className="h-[60vh] pr-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {posts.map((post, index) => (
-              <Card key={post.id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm">
-                      Day {Math.floor(index / 2) + 1} - Post {(index % 2) + 1}
-                    </CardTitle>
-                    <Badge variant={post.status === "approved" ? "default" : "outline"}>
-                      {post.status}
-                    </Badge>
-                  </div>
+              <div key={post.id} className="space-y-2">
+                <div className="flex items-center justify-between px-2">
+                  <span className="text-sm font-medium">
+                    Day {Math.floor(index / 2) + 1} - Post {(index % 2) + 1}
+                  </span>
                   {post.scheduledFor && (
-                    <CardDescription>
-                      {format(new Date(post.scheduledFor), "MMM d, yyyy h:mm a")}
-                    </CardDescription>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(post.scheduledFor), "MMM d")}
+                    </span>
                   )}
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {post.imageUrl && (
-                    <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                      {post.imageUrl.startsWith("placeholder://") ? (
-                        <div className="text-center p-4">
-                          <Palette className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                          <p className="text-xs text-muted-foreground">Image will be generated</p>
-                        </div>
-                      ) : (
-                        <img 
-                          src={post.imageUrl} 
-                          alt="Post" 
-                          className="w-full h-full object-cover rounded-lg" 
-                        />
-                      )}
-                    </div>
-                  )}
-                  
-                  {editingPost === post.id ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={editedContent[post.id] || post.content}
-                        onChange={(e) => setEditedContent({ 
-                          ...editedContent, 
-                          [post.id]: e.target.value 
-                        })}
-                        className="min-h-[100px]"
-                      />
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleSaveEdit(post.id)}
-                        >
-                          Save
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => setEditingPost(null)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-sm">{post.content}</p>
-                      <div className="flex gap-2 mt-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditPost(post.id, post.content)}
-                        >
-                          <Edit className="w-3 h-3 mr-1" />
-                          Edit
-                        </Button>
-                        {post.status !== "approved" && (
-                          <Button
-                            size="sm"
-                            onClick={() => onApprovePost(post.id)}
-                          >
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Approve
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                </div>
+                <PostCard
+                  post={post}
+                  showActions={true}
+                  onEdit={() => handleEditPost(post.id, post.content)}
+                  onApprove={post.status === "pending" ? async () => {
+                    await handleApprovePost(post.id);
+                  } : undefined}
+                  onReject={post.status === "pending" ? async () => {
+                    await handleRejectPost(post.id);
+                  } : undefined}
+                  compact={true}
+                />
+              </div>
             ))}
           </div>
         </ScrollArea>
