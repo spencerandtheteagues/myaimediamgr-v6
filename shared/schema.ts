@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean, json, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, json, integer, real, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -25,10 +25,39 @@ export const platforms = pgTable("platforms", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const campaigns = pgTable("campaigns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  platform: text("platform").notNull(),
+  businessName: text("business_name").notNull(),
+  productName: text("product_name"),
+  targetAudience: text("target_audience").notNull(),
+  campaignGoals: text("campaign_goals").notNull(),
+  brandTone: text("brand_tone").notNull(),
+  keyMessages: json("key_messages").$type<string[]>().default([]),
+  visualStyle: text("visual_style").notNull(),
+  colorScheme: text("color_scheme"),
+  callToAction: text("call_to_action").notNull(),
+  status: text("status").notNull().default("draft"), // draft, generating, review, active, completed, paused
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  postsPerDay: integer("posts_per_day").notNull().default(2),
+  generationProgress: integer("generation_progress").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const posts = pgTable("posts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id).notNull(),
+  campaignId: varchar("campaign_id").references(() => campaigns.id),
   content: text("content").notNull(),
+  imageUrl: text("image_url"),
+  videoUrl: text("video_url"),
+  imagePrompt: text("image_prompt"),
+  videoPrompt: text("video_prompt"),
   platforms: json("platforms").$type<string[]>().notNull(),
   status: text("status").notNull(), // draft, pending, approved, rejected, published, scheduled
   scheduledFor: timestamp("scheduled_for"),
@@ -86,9 +115,34 @@ export const insertPlatformSchema = createInsertSchema(platforms).pick({
   accessToken: true,
 });
 
+export const insertCampaignSchema = createInsertSchema(campaigns).pick({
+  userId: true,
+  name: true,
+  description: true,
+  platform: true,
+  businessName: true,
+  productName: true,
+  targetAudience: true,
+  campaignGoals: true,
+  brandTone: true,
+  keyMessages: true,
+  visualStyle: true,
+  colorScheme: true,
+  callToAction: true,
+  status: true,
+  startDate: true,
+  endDate: true,
+  postsPerDay: true,
+});
+
 export const insertPostSchema = createInsertSchema(posts).pick({
   userId: true,
+  campaignId: true,
   content: true,
+  imageUrl: true,
+  videoUrl: true,
+  imagePrompt: true,
+  videoPrompt: true,
   platforms: true,
   status: true,
   scheduledFor: true,
@@ -116,6 +170,8 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Platform = typeof platforms.$inferSelect;
 export type InsertPlatform = z.infer<typeof insertPlatformSchema>;
+export type Campaign = typeof campaigns.$inferSelect;
+export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type Post = typeof posts.$inferSelect;
 export type InsertPost = z.infer<typeof insertPostSchema>;
 export type AiSuggestion = typeof aiSuggestions.$inferSelect;

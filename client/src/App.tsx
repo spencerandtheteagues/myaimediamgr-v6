@@ -11,6 +11,7 @@ import Approval from "./pages/approval";
 import Analytics from "./pages/analytics";
 import Library from "./pages/library";
 import Settings from "./pages/settings";
+import Campaigns from "./pages/campaigns";
 import Sidebar from "./components/layout/sidebar";
 import Header from "./components/layout/header";
 
@@ -27,6 +28,7 @@ function Router() {
           <Route path="/approval" component={Approval} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/library" component={Library} />
+          <Route path="/campaigns" component={Campaigns} />
           <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>

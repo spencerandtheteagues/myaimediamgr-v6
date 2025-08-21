@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Platform, type InsertPlatform, type Post, type InsertPost, type AiSuggestion, type InsertAiSuggestion, type Analytics, type InsertAnalytics } from "@shared/schema";
+import { type User, type InsertUser, type Platform, type InsertPlatform, type Post, type InsertPost, type AiSuggestion, type InsertAiSuggestion, type Analytics, type InsertAnalytics, type Campaign, type InsertCampaign } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -12,9 +12,17 @@ export interface IStorage {
   createPlatform(platform: InsertPlatform): Promise<Platform>;
   updatePlatform(id: string, updates: Partial<Platform>): Promise<Platform | undefined>;
   
+  // Campaigns
+  getCampaignsByUserId(userId: string): Promise<Campaign[]>;
+  getCampaign(id: string): Promise<Campaign | undefined>;
+  createCampaign(campaign: InsertCampaign): Promise<Campaign>;
+  updateCampaign(id: string, updates: Partial<Campaign>): Promise<Campaign | undefined>;
+  deleteCampaign(id: string): Promise<boolean>;
+  
   // Posts
   getPostsByUserId(userId: string): Promise<Post[]>;
   getPostsByStatus(userId: string, status: string): Promise<Post[]>;
+  getPostsByCampaignId(campaignId: string): Promise<Post[]>;
   getPost(id: string): Promise<Post | undefined>;
   createPost(post: InsertPost): Promise<Post>;
   updatePost(id: string, updates: Partial<Post>): Promise<Post | undefined>;
@@ -33,6 +41,7 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private platforms: Map<string, Platform>;
+  private campaigns: Map<string, Campaign>;
   private posts: Map<string, Post>;
   private aiSuggestions: Map<string, AiSuggestion>;
   private analytics: Map<string, Analytics>;
@@ -40,6 +49,7 @@ export class MemStorage implements IStorage {
   constructor() {
     this.users = new Map();
     this.platforms = new Map();
+    this.campaigns = new Map();
     this.posts = new Map();
     this.aiSuggestions = new Map();
     this.analytics = new Map();
@@ -250,6 +260,44 @@ export class MemStorage implements IStorage {
     return updatedPlatform;
   }
 
+  // Campaigns
+  async getCampaignsByUserId(userId: string): Promise<Campaign[]> {
+    return Array.from(this.campaigns.values())
+      .filter(campaign => campaign.userId === userId)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+  }
+
+  async getCampaign(id: string): Promise<Campaign | undefined> {
+    return this.campaigns.get(id);
+  }
+
+  async createCampaign(insertCampaign: InsertCampaign): Promise<Campaign> {
+    const id = randomUUID();
+    const campaign: Campaign = {
+      ...insertCampaign,
+      id,
+      keyMessages: insertCampaign.keyMessages ?? [],
+      generationProgress: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.campaigns.set(id, campaign);
+    return campaign;
+  }
+
+  async updateCampaign(id: string, updates: Partial<Campaign>): Promise<Campaign | undefined> {
+    const campaign = this.campaigns.get(id);
+    if (!campaign) return undefined;
+    
+    const updatedCampaign = { ...campaign, ...updates, updatedAt: new Date() };
+    this.campaigns.set(id, updatedCampaign);
+    return updatedCampaign;
+  }
+
+  async deleteCampaign(id: string): Promise<boolean> {
+    return this.campaigns.delete(id);
+  }
+
   // Posts
   async getPostsByUserId(userId: string): Promise<Post[]> {
     return Array.from(this.posts.values())
@@ -261,6 +309,17 @@ export class MemStorage implements IStorage {
     return Array.from(this.posts.values())
       .filter(post => post.userId === userId && post.status === status)
       .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+  }
+
+  async getPostsByCampaignId(campaignId: string): Promise<Post[]> {
+    return Array.from(this.posts.values())
+      .filter(post => post.campaignId === campaignId)
+      .sort((a, b) => {
+        // Sort by scheduledFor date if available, otherwise by createdAt
+        const dateA = a.scheduledFor ? new Date(a.scheduledFor) : new Date(a.createdAt!);
+        const dateB = b.scheduledFor ? new Date(b.scheduledFor) : new Date(b.createdAt!);
+        return dateA.getTime() - dateB.getTime();
+      });
   }
 
   async getPost(id: string): Promise<Post | undefined> {

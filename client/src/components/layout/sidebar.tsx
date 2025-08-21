@@ -8,7 +8,8 @@ import {
   BarChart3, 
   FolderOpen, 
   Settings,
-  Bot
+  Bot,
+  Rocket
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -17,6 +18,7 @@ import type { Post, User } from "@shared/schema";
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Create Content", href: "/create", icon: PlusCircle },
+  { name: "Campaigns", href: "/campaigns", icon: Rocket },
   { name: "Content Calendar", href: "/calendar", icon: Calendar },
   { name: "Approval Queue", href: "/approval", icon: CheckCircle, badge: true },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },

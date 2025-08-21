@@ -1,8 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPostSchema, insertAiSuggestionSchema } from "@shared/schema";
+import { insertPostSchema, insertAiSuggestionSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
+import * as gcloudAI from "./gcloud-ai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user (demo user for now)
@@ -43,6 +44,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(posts);
     } catch (error) {
       res.status(500).json({ message: "Failed to get posts" });
+    }
+  });
+
+  // Get campaigns
+  app.get("/api/campaigns", async (req, res) => {
+    try {
+      const campaigns = await storage.getCampaignsByUserId("demo-user-1");
+      res.json(campaigns);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get campaigns" });
+    }
+  });
+
+  // Get campaign by ID
+  app.get("/api/campaigns/:id", async (req, res) => {
+    try {
+      const campaign = await storage.getCampaign(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+      res.json(campaign);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get campaign" });
+    }
+  });
+
+  // Get posts for a campaign
+  app.get("/api/campaigns/:id/posts", async (req, res) => {
+    try {
+      const posts = await storage.getPostsByCampaignId(req.params.id);
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get campaign posts" });
+    }
+  });
+
+  // Create campaign
+  app.post("/api/campaigns", async (req, res) => {
+    try {
+      const campaignData = insertCampaignSchema.parse({
+        ...req.body,
+        userId: "demo-user-1",
+        startDate: req.body.startDate,
+        endDate: req.body.endDate || new Date(new Date(req.body.startDate).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      });
+      
+      const campaign = await storage.createCampaign(campaignData);
+      res.status(201).json(campaign);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid campaign data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create campaign" });
+    }
+  });
+
+  // Update campaign
+  app.patch("/api/campaigns/:id", async (req, res) => {
+    try {
+      const campaign = await storage.updateCampaign(req.params.id, req.body);
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+      res.json(campaign);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update campaign" });
+    }
+  });
+
+  // Generate campaign content
+  app.post("/api/campaigns/:id/generate", async (req, res) => {
+    try {
+      const campaign = await storage.getCampaign(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+
+      // Update campaign status to generating
+      await storage.updateCampaign(campaign.id, { status: "generating" });
+
+      // Generate campaign posts asynchronously
+      (async () => {
+        try {
+          const startDate = new Date(campaign.startDate);
+          const posts = await gcloudAI.generateCampaign(
+            {
+              businessName: campaign.businessName,
+              productName: campaign.productName || undefined,
+              targetAudience: campaign.targetAudience,
+              brandTone: campaign.brandTone,
+              keyMessages: campaign.keyMessages || [],
+              callToAction: campaign.callToAction,
+              platform: campaign.platform,
+              visualStyle: campaign.visualStyle,
+              colorScheme: campaign.colorScheme || undefined,
+            },
+            startDate
+          );
+
+          // Generate images for posts
+          await gcloudAI.generateCampaignImages(posts);
+
+          // Create posts in storage
+          for (const post of posts) {
+            await storage.createPost({
+              userId: campaign.userId,
+              campaignId: campaign.id,
+              content: post.content,
+              imageUrl: post.imageUrl,
+              imagePrompt: post.imagePrompt,
+              platforms: [campaign.platform],
+              status: "pending",
+              scheduledFor: post.scheduledFor,
+              aiGenerated: true,
+            });
+          }
+
+          // Update campaign status to review
+          await storage.updateCampaign(campaign.id, { 
+            status: "review",
+            generationProgress: 100,
+          });
+        } catch (error) {
+          console.error("Failed to generate campaign:", error);
+          await storage.updateCampaign(campaign.id, { 
+            status: "draft",
+            generationProgress: 0,
+          });
+        }
+      })();
+
+      res.json({ message: "Campaign generation started" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate campaign" });
     }
   });
 
