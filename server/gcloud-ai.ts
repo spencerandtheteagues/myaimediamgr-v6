@@ -1,4 +1,5 @@
-import { VertexAI } from '@google-cloud/vertexai';
+import { VertexAI, HarmCategory, HarmBlockThreshold } from '@google-cloud/vertexai';
+import { GoogleGenerativeAI } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
 import { v4 as uuidv4 } from 'uuid';
 import sharp from 'sharp';
@@ -13,19 +14,30 @@ ffmpeg.setFfmpegPath(ffmpegPath.path);
 // Check if Google Cloud configuration is available
 const isGoogleCloudConfigured = !!(process.env.GCLOUD_PROJECT_ID && process.env.GCLOUD_PROJECT_ID !== '');
 
-// Initialize Vertex AI only if configured
+// Initialize Vertex AI and Gemini AI only if configured
 let vertexAI: VertexAI | null = null;
+let genAI: GoogleGenerativeAI | null = null;
 let storage: Storage | null = null;
 let bucket: any = null;
 let geminiFlashModel: any = null;
 let geminiProModel: any = null;
+let imagen4Model: any = null;
+let veo3FastModel: any = null;
+
+const bucketName = process.env.GCLOUD_STORAGE_BUCKET || 'myaimediamgr-content';
 
 if (isGoogleCloudConfigured) {
   try {
+    // Initialize Vertex AI for Gemini models
     vertexAI = new VertexAI({
       project: process.env.GCLOUD_PROJECT_ID!,
       location: process.env.GCLOUD_LOCATION || 'us-central1',
     });
+
+    // Initialize Gemini AI SDK for alternative access
+    if (process.env.GEMINI_API_KEY) {
+      genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    }
 
     // Initialize Cloud Storage
     storage = new Storage({
@@ -33,26 +45,56 @@ if (isGoogleCloudConfigured) {
       keyFilename: process.env.GCLOUD_KEY_FILE,
     });
 
-    const bucketName = process.env.GCLOUD_STORAGE_BUCKET || 'myaimediamgr-content';
     bucket = storage.bucket(bucketName);
 
-    // Initialize Gemini models
-    geminiFlashModel = vertexAI.preview.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+    // Initialize Gemini 2.5 Flash model
+    geminiFlashModel = vertexAI.getGenerativeModel({
+      model: 'gemini-2.5-flash-002',
       generationConfig: {
         maxOutputTokens: 8192,
         temperature: 0.9,
         topP: 0.95,
+        topK: 40,
       },
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+      ],
     });
 
-    geminiProModel = vertexAI.preview.getGenerativeModel({
-      model: 'gemini-2.5-pro',
+    // Initialize Gemini 2.5 Pro model
+    geminiProModel = vertexAI.getGenerativeModel({
+      model: 'gemini-2.5-pro-002',
       generationConfig: {
         maxOutputTokens: 8192,
         temperature: 0.7,
         topP: 0.95,
+        topK: 40,
       },
+    });
+
+    // Initialize Imagen 4 model
+    imagen4Model = vertexAI.getGenerativeModel({
+      model: 'imagen-4.0-generate-001',
+    });
+
+    // Initialize Veo 3 Fast model
+    veo3FastModel = vertexAI.getGenerativeModel({
+      model: 'veo-3.0-fast-generate-001',
     });
 
     console.log('Google Cloud AI services initialized successfully');
@@ -154,12 +196,26 @@ ${request.callToAction}
   ${request.isAdvertisement !== false ? 'Structure it as a compelling advertisement that drives action.' : ''}`;
 
   try {
-    const result = await geminiFlashModel.generateContent(systemPrompt);
-    const response = result.response;
+    const result = await geminiFlashModel.generateContent({
+      contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
+    });
+    const response = await result.response;
     const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
     return text || 'Failed to generate content';
   } catch (error) {
     console.error('Error generating text content:', error);
+    // Fallback to Gemini API if available
+    if (genAI) {
+      try {
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const result = await model.generateContent(systemPrompt);
+        const response = await result.response;
+        const text = response.text();
+        return text || 'Failed to generate content';
+      } catch (fallbackError) {
+        console.error('Fallback Gemini API also failed:', fallbackError);
+      }
+    }
     throw new Error('Failed to generate text content');
   }
 }
@@ -182,18 +238,25 @@ export async function generateImage(request: ImageGenerationRequest): Promise<st
   Professional quality, high resolution, suitable for social media advertising`;
 
   try {
-    // Using Vertex AI's Imagen API
-    const imagenModel = vertexAI.preview.getGenerativeModel({
-      model: 'imagen-4.0',
-    });
+    // Using Vertex AI's Imagen 4 API
+    const imagePromptData = {
+      prompt: enhancedPrompt,
+      aspectRatio: request.aspectRatio || '1:1',
+      negativePrompt: 'blurry, low quality, distorted, ugly, pixelated',
+      numberOfImages: 1,
+    };
 
-    const result = await imagenModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: enhancedPrompt }] }],
+    const result = await imagen4Model.generateContent({
+      contents: [{ 
+        role: 'user', 
+        parts: [{ 
+          text: JSON.stringify(imagePromptData)
+        }] 
+      }],
       generationConfig: {
         maxOutputTokens: 2048,
         temperature: 0.8,
         topP: 0.95,
-        candidateCount: 1,
       },
     });
 
@@ -245,8 +308,10 @@ async function generatePlaceholderImage(request: ImageGenerationRequest): Promis
   Style: ${request.visualStyle}
   This will be used as a placeholder for social media content.`;
 
-  const result = await geminiFlashModel.generateContent(prompt);
-  const response = result.response;
+  const result = await geminiFlashModel.generateContent({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+  });
+  const response = await result.response;
   const text = response.candidates?.[0]?.content?.parts?.[0]?.text || 'Placeholder image';
   
   // Return a placeholder URL with the description
@@ -271,16 +336,26 @@ export async function generateVideo(request: VideoGenerationRequest): Promise<st
   Optimized for social media, vertical format preferred`;
 
   try {
-    // Using Vertex AI's Veo API
-    const veoModel = vertexAI.preview.getGenerativeModel({
-      model: 'veo-3-fast',
-    });
+    // Using Vertex AI's Veo 3 Fast API
+    const videoPromptData = {
+      prompt: enhancedPrompt,
+      duration: request.duration || 8,
+      aspectRatio: '9:16', // Vertical for social media
+      fps: 30,
+      videoCodec: 'h264',
+    };
 
-    const result = await veoModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: enhancedPrompt }] }],
+    const result = await veo3FastModel.generateContent({
+      contents: [{ 
+        role: 'user', 
+        parts: [{ 
+          text: JSON.stringify(videoPromptData)
+        }] 
+      }],
       generationConfig: {
         maxOutputTokens: 2048,
         temperature: 0.8,
+        topP: 0.95,
       },
     });
 
@@ -372,7 +447,9 @@ export async function generateCampaign(
     
     Provide 14 distinct themes, one per line, that create a cohesive campaign narrative.`;
     
-    const themesResult = await geminiProModel.generateContent(campaignThemesPrompt);
+    const themesResult = await geminiProModel.generateContent({
+      contents: [{ role: 'user', parts: [{ text: campaignThemesPrompt }] }],
+    });
     const themesResponse = themesResult.response;
     const themesText = themesResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';
     themes = themesText.split('\n').filter((t: string) => t.trim()).slice(0, 14);
@@ -439,7 +516,9 @@ async function generateImagePrompt(
   The prompt should be specific, visually descriptive, and suitable for creating an engaging social media image.
   Focus on composition, lighting, and elements that will grab attention on ${request.platform || 'social media'}.`;
   
-  const result = await geminiFlashModel.generateContent(prompt);
+  const result = await geminiFlashModel.generateContent({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+  });
   const response = result.response;
   const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
   return text || 'Generate a professional, eye-catching image for social media advertising';
