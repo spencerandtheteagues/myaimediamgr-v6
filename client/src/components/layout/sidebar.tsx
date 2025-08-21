@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import type { Post, User } from "@shared/schema";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -26,13 +27,12 @@ const navigation = [
 export default function Sidebar() {
   const [location] = useLocation();
   
-  const { data: user } = useQuery({
+  const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
 
-  const { data: pendingPosts } = useQuery({
+  const { data: pendingPosts } = useQuery<Post[]>({
     queryKey: ["/api/posts", "pending"],
-    select: (data) => data?.length || 0,
   });
 
   return (
@@ -51,9 +51,9 @@ export default function Sidebar() {
           const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
           return (
             <Link key={item.name} href={item.href}>
-              <a
+              <div
                 className={cn(
-                  "flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors",
+                  "flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors cursor-pointer",
                   isActive
                     ? "bg-accent text-accent-foreground border border-border"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -61,12 +61,12 @@ export default function Sidebar() {
               >
                 <item.icon className="w-5 h-5" />
                 <span>{item.name}</span>
-                {item.badge && pendingPosts && pendingPosts > 0 && (
+                {item.badge && pendingPosts && pendingPosts.length > 0 && (
                   <Badge variant="secondary" className="ml-auto bg-amber-100 text-amber-800">
-                    {pendingPosts}
+                    {pendingPosts.length}
                   </Badge>
                 )}
-              </a>
+              </div>
             </Link>
           );
         })}

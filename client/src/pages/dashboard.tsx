@@ -220,8 +220,8 @@ export default function Dashboard() {
                     <Edit className="text-primary w-5 h-5" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-foreground">Create New Post</p>
-                    <p className="text-sm text-muted-foreground">Use AI to generate content</p>
+                    <div className="font-medium text-foreground">Create New Post</div>
+                    <div className="text-sm text-muted-foreground">Use AI to generate content</div>
                   </div>
                 </div>
                 <div className="w-5 h-5 text-muted-foreground" />
@@ -235,8 +235,8 @@ export default function Dashboard() {
                     <CalendarPlus className="text-green-600 dark:text-green-400 w-5 h-5" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-foreground">Schedule Content</p>
-                    <p className="text-sm text-muted-foreground">Plan your posting calendar</p>
+                    <div className="font-medium text-foreground">Schedule Content</div>
+                    <div className="text-sm text-muted-foreground">Plan your posting calendar</div>
                   </div>
                 </div>
                 <div className="w-5 h-5 text-muted-foreground" />
@@ -249,8 +249,8 @@ export default function Dashboard() {
                   <Wand2 className="text-purple-600 dark:text-purple-400 w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <p className="font-medium text-foreground">AI Content Ideas</p>
-                  <p className="text-sm text-muted-foreground">Get smart suggestions</p>
+                  <div className="font-medium text-foreground">AI Content Ideas</div>
+                  <div className="text-sm text-muted-foreground">Get smart suggestions</div>
                 </div>
               </div>
               <div className="w-5 h-5 text-muted-foreground" />
@@ -269,8 +269,8 @@ export default function Dashboard() {
                 <CheckCircle className="text-green-600 dark:text-green-400 w-4 h-4" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">Post approved and published</p>
-                <p className="text-xs text-muted-foreground mt-1">"Morning coffee specials..." • 2 hours ago</p>
+                <div className="text-sm font-medium text-foreground">Post approved and published</div>
+                <div className="text-xs text-muted-foreground mt-1">"Morning coffee specials..." • 2 hours ago</div>
               </div>
             </div>
 
@@ -279,8 +279,8 @@ export default function Dashboard() {
                 <Bot className="text-blue-600 dark:text-blue-400 w-4 h-4" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">AI generated 3 new content ideas</p>
-                <p className="text-xs text-muted-foreground mt-1">For your café business • 4 hours ago</p>
+                <div className="text-sm font-medium text-foreground">AI generated 3 new content ideas</div>
+                <div className="text-xs text-muted-foreground mt-1">For your café business • 4 hours ago</div>
               </div>
             </div>
 
@@ -289,8 +289,8 @@ export default function Dashboard() {
                 <Clock className="text-amber-600 dark:text-amber-400 w-4 h-4" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">Content pending approval</p>
-                <p className="text-xs text-muted-foreground mt-1">"Weekend brunch menu..." • 6 hours ago</p>
+                <div className="text-sm font-medium text-foreground">Content pending approval</div>
+                <div className="text-xs text-muted-foreground mt-1">"Weekend brunch menu..." • 6 hours ago</div>
               </div>
             </div>
 
@@ -299,8 +299,8 @@ export default function Dashboard() {
                 <Calendar className="text-purple-600 dark:text-purple-400 w-4 h-4" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">5 posts scheduled for this week</p>
-                <p className="text-xs text-muted-foreground mt-1">Cross-platform campaign • Yesterday</p>
+                <div className="text-sm font-medium text-foreground">5 posts scheduled for this week</div>
+                <div className="text-xs text-muted-foreground mt-1">Cross-platform campaign • Yesterday</div>
               </div>
             </div>
           </CardContent>

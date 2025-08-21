@@ -54,7 +54,8 @@ class AiService {
       // For now, we'll return mock analysis based on content characteristics
       
       const wordCount = content.split(' ').length;
-      const hasEmojis = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/u.test(content);
+      // Check for common emoji ranges using simpler regex
+      const hasEmojis = /[\u2600-\u26FF]|[\u2700-\u27BF]/.test(content) || content.match(/:\w+:/) !== null;
       const hasHashtags = content.includes('#');
       const hasQuestions = content.includes('?');
       const hasCallToAction = /\b(visit|check|try|buy|order|book|call|contact|follow|share|like|comment)\b/i.test(content);
@@ -141,7 +142,7 @@ class AiService {
     // Combine platform-specific and content-specific hashtags
     const platformHashtags = platforms[0] ? commonHashtags[platforms[0] as keyof typeof commonHashtags] || [] : [];
     
-    return [...new Set([...contentHashtags, ...platformHashtags])].slice(0, 5);
+    return Array.from(new Set([...contentHashtags, ...platformHashtags])).slice(0, 5);
   }
 
   /**

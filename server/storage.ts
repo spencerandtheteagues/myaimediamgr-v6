@@ -131,8 +131,12 @@ export class MemStorage implements IStorage {
         platforms: ["Facebook", "Instagram"],
         status: "pending",
         scheduledFor: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+        publishedAt: null,
         mediaUrls: ["https://example.com/brunch-image.jpg"],
         aiGenerated: true,
+        approvedBy: null,
+        rejectionReason: null,
+        engagementData: null,
         createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
         updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
       },
@@ -143,8 +147,12 @@ export class MemStorage implements IStorage {
         platforms: ["X (Twitter)", "LinkedIn"],
         status: "pending",
         scheduledFor: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
+        publishedAt: null,
         mediaUrls: [],
         aiGenerated: false,
+        approvedBy: null,
+        rejectionReason: null,
+        engagementData: null,
         createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
         updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
       },
@@ -155,8 +163,12 @@ export class MemStorage implements IStorage {
         platforms: ["Instagram"],
         status: "pending",
         scheduledFor: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), // 4 days from now
+        publishedAt: null,
         mediaUrls: ["https://example.com/latte-art-video.mp4"],
         aiGenerated: true,
+        approvedBy: null,
+        rejectionReason: null,
+        engagementData: null,
         createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
         updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
       },
@@ -166,9 +178,12 @@ export class MemStorage implements IStorage {
         content: "☕ Start your Monday with our signature blend! What's your go-to morning coffee order? #MondayMotivation #CoffeeLovers",
         platforms: ["Instagram", "Facebook", "X (Twitter)"],
         status: "published",
+        scheduledFor: null,
         publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
         mediaUrls: ["https://example.com/monday-coffee.jpg"],
         aiGenerated: true,
+        approvedBy: null,
+        rejectionReason: null,
         engagementData: {
           likes: 324,
           comments: 45,
@@ -198,6 +213,8 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       id,
+      businessName: insertUser.businessName ?? null,
+      avatar: insertUser.avatar ?? null,
       createdAt: new Date(),
     };
     this.users.set(id, user);
@@ -214,6 +231,10 @@ export class MemStorage implements IStorage {
     const platform: Platform = {
       ...insertPlatform,
       id,
+      isConnected: insertPlatform.isConnected ?? null,
+      userId: insertPlatform.userId ?? null,
+      accountId: insertPlatform.accountId ?? null,
+      accessToken: insertPlatform.accessToken ?? null,
       createdAt: new Date(),
     };
     this.platforms.set(id, platform);
@@ -251,6 +272,11 @@ export class MemStorage implements IStorage {
     const post: Post = {
       ...insertPost,
       id,
+      publishedAt: null,
+      mediaUrls: insertPost.mediaUrls ?? [],
+      approvedBy: null,
+      rejectionReason: null,
+      engagementData: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -281,8 +307,11 @@ export class MemStorage implements IStorage {
   async createAiSuggestion(insertSuggestion: InsertAiSuggestion): Promise<AiSuggestion> {
     const id = randomUUID();
     const suggestion: AiSuggestion = {
-      ...insertSuggestion,
       id,
+      userId: insertSuggestion.userId,
+      prompt: insertSuggestion.prompt,
+      suggestions: insertSuggestion.suggestions,
+      selected: insertSuggestion.selected ?? null,
       createdAt: new Date(),
     };
     this.aiSuggestions.set(id, suggestion);

@@ -8,7 +8,7 @@ import { Eye, Edit, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Post } from "@shared/schema";
-import ApprovalItem from "@/components/content/approval-item";
+import ApprovalItem from "../components/content/approval-item";
 
 export default function Approval() {
   const [activeTab, setActiveTab] = useState("pending");

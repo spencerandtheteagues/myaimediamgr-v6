@@ -9,8 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Bot, Bold, Italic, Link as LinkIcon, Image, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import PlatformSelector from "@/components/content/platform-selector";
-import AiSuggestions from "@/components/content/ai-suggestions";
+import PlatformSelector from "../components/content/platform-selector";
+import AiSuggestions from "../components/content/ai-suggestions";
 
 export default function CreateContent() {
   const [content, setContent] = useState("");
