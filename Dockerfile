@@ -22,6 +22,7 @@ ENV TAILW-IND_CONFIG=/app/client/tailwind.config.cjs
 ARG VITE_STRIPE_PUBLIC_KEY
 RUN echo "VITE_STRIPE_PUBLIC_KEY=${VITE_STRIPE_PUBLIC_KEY}" > /app/client/.env
 RUN npm run build
+RUN ls -l /app/client/public
 
 # -------- Runtime --------
 FROM node:20-alpine
