@@ -18,20 +18,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Stripe payment routes
   registerStripeRoutes(app);
 
+  // Health check for Docker/Cloud run
+app.get("/health", (_req, res) => {
+  res.status(200).json({ ok: true, ts: new Date().toISOString() });
+});
+
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || 'demo-user-1';
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  app.post(
+    "/api/auth/replit",
+    passport.authenticate("replit", {
+      successRedirect: "/",
+      failureRedirect: "/login",
+    })
+  );
 
   // Get current user (fallback for old API)
   app.get("/api/user", async (req: any, res) => {
