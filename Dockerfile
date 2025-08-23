@@ -31,7 +31,7 @@ RUN npm ci --only=production
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/client/dist ./client/dist
+COPY --from=builder /app/dist/public ./dist/public
 
 # Copy server files
 COPY server ./server
