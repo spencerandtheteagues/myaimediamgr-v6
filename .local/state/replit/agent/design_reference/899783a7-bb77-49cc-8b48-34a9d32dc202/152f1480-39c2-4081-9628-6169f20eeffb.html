@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyAiMediaMgr - AI-Powered Social Media Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .hover-lift {
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+        }
+        
+        .chart-bar {
+            transition: height 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- @COMPONENT: MainLayout [sidebar navigation and main content area] -->
+    <div class="flex h-screen overflow-hidden">
+        <!-- @COMPONENT: Sidebar [main navigation] -->
+        <aside class="w-64 bg-white shadow-lg flex flex-col">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-sm"></i>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-800">MyAiMediaMgr</h1>
+                </div>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-2">
+                <a href="#" data-nav="dashboard" class="nav-item active flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg bg-primary-50 text-primary-700 border border-primary-200">
+                    <i class="fas fa-tachometer-alt w-5"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" data-nav="create" class="nav-item flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100">
+                    <i class="fas fa-plus-circle w-5"></i>
+                    <span>Create Content</span>
+                </a>
+                <a href="#" data-nav="calendar" class="nav-item flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100">
+                    <i class="fas fa-calendar w-5"></i>
+                    <span>Content Calendar</span>
+                </a>
+                <a href="#" data-nav="approval" class="nav-item flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100">
+                    <i class="fas fa-check-circle w-5"></i>
+                    <span>Approval Queue</span>
+                    <span class="ml-auto bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full" data-mock="true">3</span>
+                </a>
+                <a href="#" data-nav="analytics" class="nav-item flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100">
+                    <i class="fas fa-chart-bar w-5"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="#" data-nav="library" class="nav-item flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100">
+                    <i class="fas fa-folder w-5"></i>
+                    <span>Content Library</span>
+                </a>
+                <a href="#" data-nav="settings" class="nav-item flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100">
+                    <i class="fas fa-cog w-5"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <!-- Small business owner profile avatar -->
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=40&h=40" alt="User profile" class="w-10 h-10 rounded-full object-cover" data-mock="true">
+                    <div>
+                        <p class="text-sm font-medium text-gray-800" data-mock="true">Sarah Johnson</p>
+                        <p class="text-xs text-gray-500" data-mock="true">Café Owner</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <!-- @END_COMPONENT: Sidebar -->
+        
+        <!-- @COMPONENT: MainContent [dynamic content area] -->
+        <main class="flex-1 overflow-y-auto">
+            <!-- @COMPONENT: Header [top bar with search and notifications] -->
+            <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800" id="page-title">Dashboard</h2>
+                        <p class="text-sm text-gray-500 mt-1" id="page-subtitle">Welcome back! Here's your social media overview.</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="relative p-2 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" data-mock="true"></span>
+                        </button>
+                        <button class="bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-600 transition-colors" data-event="click:quickCreate">
+                            <i class="fas fa-plus mr-2"></i>
+                            Quick Create
+                        </button>
+                    </div>
+                </div>
+            </header>
+            <!-- @END_COMPONENT: Header -->
+            
+            <!-- @COMPONENT: DashboardView [main dashboard content] -->
+            <div id="dashboard-view" class="content-view p-6">
+                <!-- Connected Platforms Status -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Connected Platforms</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+                            <i class="fab fa-instagram text-2xl text-pink-500 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-800">Instagram</p>
+                            <p class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-circle text-xs mr-1"></i>Connected
+                            </p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+                            <i class="fab fa-facebook text-2xl text-blue-600 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-800">Facebook</p>
+                            <p class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-circle text-xs mr-1"></i>Connected
+                            </p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+                            <i class="fab fa-twitter text-2xl text-blue-400 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-800">X (Twitter)</p>
+                            <p class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-circle text-xs mr-1"></i>Connected
+                            </p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+                            <i class="fab fa-tiktok text-2xl text-gray-800 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-800">TikTok</p>
+                            <p class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-circle text-xs mr-1"></i>Connected
+                            </p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+                            <i class="fab fa-linkedin text-2xl text-blue-700 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-800">LinkedIn</p>
+                            <p class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-circle text-xs mr-1"></i>Connected
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Key Metrics -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Total Posts This Month</p>
+                                <p class="text-3xl font-bold text-gray-800 mt-2" data-mock="true">47</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-share-alt text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-center mt-4">
+                            <span class="text-green-600 text-sm font-medium">
+                                <i class="fas fa-arrow-up mr-1"></i>12%
+                            </span>
+                            <span class="text-gray-500 text-sm ml-2">vs last month</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Total Engagement</p>
+                                <p class="text-3xl font-bold text-gray-800 mt-2" data-mock="true">2.8K</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-heart text-green-600"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-center mt-4">
+                            <span class="text-green-600 text-sm font-medium">
+                                <i class="fas fa-arrow-up mr-1"></i>23%
+                            </span>
+                            <span class="text-gray-500 text-sm ml-2">vs last month</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Pending Approval</p>
+                                <p class="text-3xl font-bold text-gray-800 mt-2" data-mock="true">3</p>
+                            </div>
+                            <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-clock text-amber-600"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-center mt-4">
+                            <button class="text-primary-600 text-sm font-medium hover:text-primary-700">
+                                Review Now →
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Scheduled Posts</p>
+                                <p class="text-3xl font-bold text-gray-800 mt-2" data-mock="true">12</p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-calendar-alt text-purple-600"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-center mt-4">
+                            <span class="text-gray-500 text-sm">Next: Today 3:00 PM</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions & Recent Activity -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Quick Actions -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                        <div class="space-y-3">
+                            <button class="w-full flex items-center justify-between p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors" data-event="click:createPost">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-edit text-primary-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-800">Create New Post</p>
+                                        <p class="text-sm text-gray-500">Use AI to generate content</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </button>
+                            
+                            <button class="w-full flex items-center justify-between p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors" data-event="click:schedulePost">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-calendar-plus text-green-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-800">Schedule Content</p>
+                                        <p class="text-sm text-gray-500">Plan your posting calendar</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </button>
+                            
+                            <button class="w-full flex items-center justify-between p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors" data-event="click:generateAI">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-magic text-purple-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-800">AI Content Ideas</p>
+                                        <p class="text-sm text-gray-500">Get smart suggestions</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activity -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3" data-mock="true">
+                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-check text-green-600 text-xs"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-800">Post approved and published</p>
+                                    <p class="text-xs text-gray-500 mt-1">"Morning coffee specials..." • 2 hours ago</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3" data-mock="true">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-robot text-blue-600 text-xs"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-800">AI generated 3 new content ideas</p>
+                                    <p class="text-xs text-gray-500 mt-1">For your café business • 4 hours ago</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3" data-mock="true">
+                                <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-clock text-amber-600 text-xs"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-800">Content pending approval</p>
+                                    <p class="text-xs text-gray-500 mt-1">"Weekend brunch menu..." • 6 hours ago</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3" data-mock="true">
+                                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-calendar text-purple-600 text-xs"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-800">5 posts scheduled for this week</p>
+                                    <p class="text-xs text-gray-500 mt-1">Cross-platform campaign • Yesterday</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: DashboardView -->
+            
+            <!-- @COMPONENT: CreateContentView [content creation interface] -->
+            <div id="create-view" class="content-view p-6 hidden">
+                <div class="max-w-4xl mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-800">Create New Content</h3>
+                                <p class="text-sm text-gray-500 mt-1">Use AI assistance to create engaging social media posts</p>
+                            </div>
+                            <button class="bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-600 transition-colors" data-event="click:aiAssist">
+                                <i class="fas fa-robot mr-2"></i>
+                                AI Assist
+                            </button>
+                        </div>
+                        
+                        <!-- Platform Selection -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Select Platforms</label>
+                            <div class="flex flex-wrap gap-3">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" checked class="form-checkbox text-primary-500 rounded">
+                                    <i class="fab fa-instagram text-pink-500"></i>
+                                    <span class="text-sm text-gray-700">Instagram</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" checked class="form-checkbox text-primary-500 rounded">
+                                    <i class="fab fa-facebook text-blue-600"></i>
+                                    <span class="text-sm text-gray-700">Facebook</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" class="form-checkbox text-primary-500 rounded">
+                                    <i class="fab fa-twitter text-blue-400"></i>
+                                    <span class="text-sm text-gray-700">X (Twitter)</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" class="form-checkbox text-primary-500 rounded">
+                                    <i class="fab fa-tiktok text-gray-800"></i>
+                                    <span class="text-sm text-gray-700">TikTok</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" class="form-checkbox text-primary-500 rounded">
+                                    <i class="fab fa-linkedin text-blue-700"></i>
+                                    <span class="text-sm text-gray-700">LinkedIn</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Content Input -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Content</label>
+                            <div class="border border-gray-300 rounded-lg overflow-hidden">
+                                <div class="bg-gray-50 px-4 py-2 border-b border-gray-300 flex items-center space-x-2 text-sm">
+                                    <button class="text-gray-600 hover:text-gray-800"><i class="fas fa-bold"></i></button>
+                                    <button class="text-gray-600 hover:text-gray-800"><i class="fas fa-italic"></i></button>
+                                    <button class="text-gray-600 hover:text-gray-800"><i class="fas fa-link"></i></button>
+                                    <button class="text-gray-600 hover:text-gray-800"><i class="fas fa-image"></i></button>
+                                    <div class="ml-auto">
+                                        <button class="bg-primary-100 text-primary-700 px-3 py-1 rounded text-xs hover:bg-primary-200" data-event="click:aiSuggest">
+                                            <i class="fas fa-magic mr-1"></i>AI Suggest
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea 
+                                    class="w-full p-4 h-32 resize-none focus:outline-none" 
+                                    placeholder="What would you like to share? Describe your business update, promotion, or let AI help you create content..."
+                                    data-mock="true"
+                                ></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- AI Suggestions Panel -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6" data-mock="true">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-robot text-blue-600 text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-blue-900 mb-2">AI Content Suggestions</h4>
+                                    <div class="space-y-2">
+                                        <div class="bg-white p-3 rounded border border-blue-200 cursor-pointer hover:bg-blue-25" data-event="click:selectSuggestion">
+                                            <p class="text-sm text-gray-800">"☕ Start your Monday with our signature blend! What's your go-to morning coffee order? #MondayMotivation #CoffeeLovers"</p>
+                                        </div>
+                                        <div class="bg-white p-3 rounded border border-blue-200 cursor-pointer hover:bg-blue-25" data-event="click:selectSuggestion">
+                                            <p class="text-sm text-gray-800">"Fresh pastries, warm atmosphere, and the perfect cup of coffee - that's what makes mornings special at our café ✨"</p>
+                                        </div>
+                                        <div class="bg-white p-3 rounded border border-blue-200 cursor-pointer hover:bg-blue-25" data-event="click:selectSuggestion">
+                                            <p class="text-sm text-gray-800">"Behind the scenes: Our baristas craft each latte with love and precision. Come taste the difference! ☕❤️"</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Platform Preview -->
+                        <div class="mb-6">
+                            <h4 class="text-sm font-medium text-gray-700 mb-3">Preview Across Platforms</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <div class="flex items-center space-x-2 mb-2">
+                                        <i class="fab fa-instagram text-pink-500"></i>
+                                        <span class="text-sm font-medium">Instagram</span>
+                                    </div>
+                                    <div class="bg-gray-50 p-3 rounded text-sm text-gray-600" data-mock="true">
+                                        Preview of your content optimized for Instagram...
+                                    </div>
+                                </div>
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <div class="flex items-center space-x-2 mb-2">
+                                        <i class="fab fa-facebook text-blue-600"></i>
+                                        <span class="text-sm font-medium">Facebook</span>
+                                    </div>
+                                    <div class="bg-gray-50 p-3 rounded text-sm text-gray-600" data-mock="true">
+                                        Preview of your content optimized for Facebook...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Schedule Options -->
+                        <div class="border-t border-gray-200 pt-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <label class="flex items-center space-x-2">
+                                        <input type="radio" name="schedule" value="now" checked class="form-radio text-primary-500">
+                                        <span class="text-sm text-gray-700">Publish Now</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="radio" name="schedule" value="later" class="form-radio text-primary-500">
+                                        <span class="text-sm text-gray-700">Schedule for Later</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="radio" name="schedule" value="approval" class="form-radio text-primary-500">
+                                        <span class="text-sm text-gray-700">Send for Approval</span>
+                                    </label>
+                                </div>
+                                <button class="bg-primary-500 text-white px-6 py-2 rounded-lg hover:bg-primary-600 transition-colors" data-event="click:publishPost">
+                                    Create Post
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: CreateContentView -->
+            
+            <!-- @COMPONENT: CalendarView [content calendar] -->
+            <div id="calendar-view" class="content-view p-6 hidden">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-800">Content Calendar</h3>
+                                <p class="text-sm text-gray-500 mt-1">View and manage your scheduled posts</p>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="flex items-center space-x-2">
+                                    <button class="p-2 text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <span class="font-medium text-gray-800" data-mock="true">January 2024</span>
+                                    <button class="p-2 text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <button class="bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-600 transition-colors">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Schedule Post
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Calendar Grid -->
+                        <div class="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+                            <!-- Calendar header -->
+                            <div class="bg-gray-50 p-3 text-center text-sm font-medium text-gray-700">Sun</div>
+                            <div class="bg-gray-50 p-3 text-center text-sm font-medium text-gray-700">Mon</div>
+                            <div class="bg-gray-50 p-3 text-center text-sm font-medium text-gray-700">Tue</div>
+                            <div class="bg-gray-50 p-3 text-center text-sm font-medium text-gray-700">Wed</div>
+                            <div class="bg-gray-50 p-3 text-center text-sm font-medium text-gray-700">Thu</div>
+                            <div class="bg-gray-50 p-3 text-center text-sm font-medium text-gray-700">Fri</div>
+                            <div class="bg-gray-50 p-3 text-center text-sm font-medium text-gray-700">Sat</div>
+                            
+                            <!-- Calendar days with sample scheduled posts -->
+                            <!-- @MAP: calendar days rendering -->
+                            <div class="bg-white p-3 h-24 text-sm text-gray-400" data-mock="true">31</div>
+                            <div class="bg-white p-3 h-24 text-sm">
+                                <span class="text-gray-800 font-medium" data-mock="true">1</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mb-1"></div>
+                                    <div class="w-2 h-2 bg-pink-500 rounded-full"></div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-3 h-24 text-sm">
+                                <span class="text-gray-800 font-medium" data-mock="true">2</span>
+                            </div>
+                            <div class="bg-white p-3 h-24 text-sm">
+                                <span class="text-gray-800 font-medium" data-mock="true">3</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-3 h-24 text-sm">
+                                <span class="text-gray-800 font-medium" data-mock="true">4</span>
+                            </div>
+                            <div class="bg-white p-3 h-24 text-sm">
+                                <span class="text-gray-800 font-medium" data-mock="true">5</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-purple-500 rounded-full mb-1"></div>
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mb-1"></div>
+                                    <div class="w-2 h-2 bg-pink-500 rounded-full"></div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-3 h-24 text-sm">
+                                <span class="text-gray-800 font-medium" data-mock="true">6</span>
+                            </div>
+                            <!-- Continue for full calendar... showing pattern -->
+                            <div class="bg-white p-3 h-24 text-sm">
+                                <span class="text-gray-800 font-medium" data-mock="true">7</span>
+                            </div>
+                            <div class="bg-white p-3 h-24 text-sm bg-blue-50">
+                                <span class="text-blue-600 font-medium" data-mock="true">8</span>
+                                <div class="text-xs text-blue-600 mt-1">Today</div>
+                            </div>
+                            <div class="bg-white p-3 h-24 text-sm">
+                                <span class="text-gray-800 font-medium" data-mock="true">9</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-amber-500 rounded-full"></div>
+                                </div>
+                            </div>
+                            <!-- @END_MAP -->
+                        </div>
+                        
+                        <!-- Legend -->
+                        <div class="mt-6 flex items-center space-x-6 text-sm">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                <span class="text-gray-600">Facebook</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 bg-pink-500 rounded-full"></div>
+                                <span class="text-gray-600">Instagram</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 bg-blue-400 rounded-full"></div>
+                                <span class="text-gray-600">X (Twitter)</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
+                                <span class="text-gray-600">LinkedIn</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Upcoming Posts -->
+                <div class="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4">Upcoming Posts</h4>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg" data-mock="true">
+                            <div class="flex-shrink-0">
+                                <i class="fab fa-facebook text-blue-600 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-800">Today at 3:00 PM</p>
+                                <p class="text-sm text-gray-600">"Fresh pastries just out of the oven! Come warm up with us this afternoon..."</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="text-gray-400 hover:text-red-600">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg" data-mock="true">
+                            <div class="flex-shrink-0">
+                                <i class="fab fa-instagram text-pink-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-800">Tomorrow at 9:00 AM</p>
+                                <p class="text-sm text-gray-600">"Good morning coffee lovers! ☕ What's your favorite way to start the day?"</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="text-gray-400 hover:text-red-600">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: CalendarView -->
+            
+            <!-- @COMPONENT: ApprovalView [content approval workflow] -->
+            <div id="approval-view" class="content-view p-6 hidden">
+                <div class="max-w-4xl mx-auto">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-800">Content Approval Queue</h3>
+                                <p class="text-sm text-gray-500 mt-1">Review and approve content before publishing</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full" data-mock="true">3 Pending</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Approval Filter Tabs -->
+                        <div class="border-b border-gray-200 mb-6">
+                            <nav class="flex space-x-8">
+                                <button class="approval-tab active py-2 px-1 border-b-2 border-primary-500 font-medium text-sm text-primary-600">
+                                    Pending (3)
+                                </button>
+                                <button class="approval-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                                    Approved (8)
+                                </button>
+                                <button class="approval-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                                    Rejected (2)
+                                </button>
+                            </nav>
+                        </div>
+                        
+                        <!-- Pending Approval Items -->
+                        <div class="space-y-6">
+                            <div class="border border-amber-200 bg-amber-50 rounded-lg p-6" data-mock="true">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="flex space-x-1">
+                                            <i class="fab fa-facebook text-blue-600"></i>
+                                            <i class="fab fa-instagram text-pink-500"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-800">Weekend Brunch Special</p>
+                                            <p class="text-sm text-gray-500">Created 2 hours ago • AI Generated</p>
+                                        </div>
+                                    </div>
+                                    <span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">Pending</span>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <p class="text-gray-800 mb-2">"🥞 Weekend brunch is here! Join us for fluffy pancakes, fresh fruit, and the best coffee in town. Perfect way to start your Saturday! #WeekendBrunch #CafeLife #FreshEats"</p>
+                                    <div class="flex items-center space-x-2 text-sm text-gray-500">
+                                        <span>📸 Image attached</span>
+                                        <span>•</span>
+                                        <span>Scheduled for: Sat 10:00 AM</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between pt-4 border-t border-amber-200">
+                                    <div class="flex items-center space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-700 text-sm">
+                                            <i class="fas fa-eye mr-1"></i>Preview
+                                        </button>
+                                        <button class="text-gray-600 hover:text-gray-700 text-sm">
+                                            <i class="fas fa-edit mr-1"></i>Edit
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors" data-event="click:rejectContent">
+                                            <i class="fas fa-times mr-1"></i>Reject
+                                        </button>
+                                        <button class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors" data-event="click:approveContent">
+                                            <i class="fas fa-check mr-1"></i>Approve & Schedule
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="border border-amber-200 bg-amber-50 rounded-lg p-6" data-mock="true">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="flex space-x-1">
+                                            <i class="fab fa-twitter text-blue-400"></i>
+                                            <i class="fab fa-linkedin text-blue-700"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-800">Coffee Tips Tuesday</p>
+                                            <p class="text-sm text-gray-500">Created 5 hours ago • Manual</p>
+                                        </div>
+                                    </div>
+                                    <span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">Pending</span>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <p class="text-gray-800 mb-2">"☕ Coffee Tip Tuesday: Did you know that grinding your coffee beans right before brewing preserves the oils and gives you the freshest flavor? Try it and taste the difference! #CoffeeTips #FreshBrew"</p>
+                                    <div class="flex items-center space-x-2 text-sm text-gray-500">
+                                        <span>No media</span>
+                                        <span>•</span>
+                                        <span>Scheduled for: Tue 2:00 PM</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between pt-4 border-t border-amber-200">
+                                    <div class="flex items-center space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-700 text-sm">
+                                            <i class="fas fa-eye mr-1"></i>Preview
+                                        </button>
+                                        <button class="text-gray-600 hover:text-gray-700 text-sm">
+                                            <i class="fas fa-edit mr-1"></i>Edit
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors" data-event="click:rejectContent">
+                                            <i class="fas fa-times mr-1"></i>Reject
+                                        </button>
+                                        <button class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors" data-event="click:approveContent">
+                                            <i class="fas fa-check mr-1"></i>Approve & Schedule
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="border border-amber-200 bg-amber-50 rounded-lg p-6" data-mock="true">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="flex space-x-1">
+                                            <i class="fab fa-instagram text-pink-500"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-800">Behind the Scenes: Latte Art</p>
+                                            <p class="text-sm text-gray-500">Created yesterday • AI Generated</p>
+                                        </div>
+                                    </div>
+                                    <span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">Pending</span>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <p class="text-gray-800 mb-2">"✨ Watch our skilled barista create the perfect latte art! Each cup is crafted with love and precision. What's your favorite latte art design? 🎨☕ #LatteArt #BehindTheScenes #CoffeeArt"</p>
+                                    <div class="flex items-center space-x-2 text-sm text-gray-500">
+                                        <span>🎥 Video attached</span>
+                                        <span>•</span>
+                                        <span>Scheduled for: Wed 11:00 AM</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between pt-4 border-t border-amber-200">
+                                    <div class="flex items-center space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-700 text-sm">
+                                            <i class="fas fa-eye mr-1"></i>Preview
+                                        </button>
+                                        <button class="text-gray-600 hover:text-gray-700 text-sm">
+                                            <i class="fas fa-edit mr-1"></i>Edit
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors" data-event="click:rejectContent">
+                                            <i class="fas fa-times mr-1"></i>Reject
+                                        </button>
+                                        <button class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors" data-event="click:approveContent">
+                                            <i class="fas fa-check mr-1"></i>Approve & Schedule
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: ApprovalView -->
+            
+            <!-- @COMPONENT: AnalyticsView [performance analytics] -->
+            <div id="analytics-view" class="content-view p-6 hidden">
+                <div class="space-y-8">
+                    <!-- Analytics Overview -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-800">Performance Analytics</h3>
+                                <p class="text-sm text-gray-500 mt-1">Track your social media performance across all platforms</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <select class="form-select text-sm border-gray-300 rounded-lg">
+                                    <option>Last 30 days</option>
+                                    <option>Last 7 days</option>
+                                    <option>Last 90 days</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Key Performance Metrics -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <div class="text-center">
+                                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-eye text-blue-600 text-xl"></i>
+                                </div>
+                                <p class="text-2xl font-bold text-gray-800" data-mock="true">15.2K</p>
+                                <p class="text-sm text-gray-500">Total Reach</p>
+                                <p class="text-xs text-green-600 mt-1">
+                                    <i class="fas fa-arrow-up"></i> +18% from last period
+                                </p>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-heart text-green-600 text-xl"></i>
+                                </div>
+                                <p class="text-2xl font-bold text-gray-800" data-mock="true">2.8K</p>
+                                <p class="text-sm text-gray-500">Engagement</p>
+                                <p class="text-xs text-green-600 mt-1">
+                                    <i class="fas fa-arrow-up"></i> +23% from last period
+                                </p>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-users text-purple-600 text-xl"></i>
+                                </div>
+                                <p class="text-2xl font-bold text-gray-800" data-mock="true">1.2K</p>
+                                <p class="text-sm text-gray-500">New Followers</p>
+                                <p class="text-xs text-green-600 mt-1">
+                                    <i class="fas fa-arrow-up"></i> +12% from last period
+                                </p>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-mouse-pointer text-amber-600 text-xl"></i>
+                                </div>
+                                <p class="text-2xl font-bold text-gray-800" data-mock="true">4.2%</p>
+                                <p class="text-sm text-gray-500">Click Rate</p>
+                                <p class="text-xs text-red-600 mt-1">
+                                    <i class="fas fa-arrow-down"></i> -2% from last period
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Engagement Chart & Platform Breakdown -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Engagement Over Time</h4>
+                            <div class="h-64 flex items-end justify-between space-x-2">
+                                <!-- Simple bar chart representation -->
+                                <div class="flex flex-col items-center space-y-2">
+                                    <div class="bg-blue-500 w-8 chart-bar" style="height: 60px;" data-mock="true"></div>
+                                    <span class="text-xs text-gray-500">Jan 1</span>
+                                </div>
+                                <div class="flex flex-col items-center space-y-2">
+                                    <div class="bg-blue-500 w-8 chart-bar" style="height: 80px;" data-mock="true"></div>
+                                    <span class="text-xs text-gray-500">Jan 5</span>
+                                </div>
+                                <div class="flex flex-col items-center space-y-2">
+                                    <div class="bg-blue-500 w-8 chart-bar" style="height: 45px;" data-mock="true"></div>
+                                    <span class="text-xs text-gray-500">Jan 10</span>
+                                </div>
+                                <div class="flex flex-col items-center space-y-2">
+                                    <div class="bg-blue-500 w-8 chart-bar" style="height: 95px;" data-mock="true"></div>
+                                    <span class="text-xs text-gray-500">Jan 15</span>
+                                </div>
+                                <div class="flex flex-col items-center space-y-2">
+                                    <div class="bg-blue-500 w-8 chart-bar" style="height: 70px;" data-mock="true"></div>
+                                    <span class="text-xs text-gray-500">Jan 20</span>
+                                </div>
+                                <div class="flex flex-col items-center space-y-2">
+                                    <div class="bg-blue-500 w-8 chart-bar" style="height: 110px;" data-mock="true"></div>
+                                    <span class="text-xs text-gray-500">Jan 25</span>
+                                </div>
+                                <div class="flex flex-col items-center space-y-2">
+                                    <div class="bg-blue-500 w-8 chart-bar" style="height: 85px;" data-mock="true"></div>
+                                    <span class="text-xs text-gray-500">Today</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Platform Performance</h4>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-3 bg-pink-50 rounded-lg">
+                                    <div class="flex items-center space-x-3">
+                                        <i class="fab fa-instagram text-pink-500 text-xl"></i>
+                                        <div>
+                                            <p class="font-medium text-gray-800">Instagram</p>
+                                            <p class="text-sm text-gray-500">2.1K followers</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-lg font-semibold text-gray-800" data-mock="true">1,234</p>
+                                        <p class="text-sm text-green-600">+15%</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                    <div class="flex items-center space-x-3">
+                                        <i class="fab fa-facebook text-blue-600 text-xl"></i>
+                                        <div>
+                                            <p class="font-medium text-gray-800">Facebook</p>
+                                            <p class="text-sm text-gray-500">1.8K followers</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-lg font-semibold text-gray-800" data-mock="true">892</p>
+                                        <p class="text-sm text-green-600">+8%</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                    <div class="flex items-center space-x-3">
+                                        <i class="fab fa-twitter text-blue-400 text-xl"></i>
+                                        <div>
+                                            <p class="font-medium text-gray-800">X (Twitter)</p>
+                                            <p class="text-sm text-gray-500">956 followers</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-lg font-semibold text-gray-800" data-mock="true">445</p>
+                                        <p class="text-sm text-red-600">-3%</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                    <div class="flex items-center space-x-3">
+                                        <i class="fab fa-linkedin text-blue-700 text-xl"></i>
+                                        <div>
+                                            <p class="font-medium text-gray-800">LinkedIn</p>
+                                            <p class="text-sm text-gray-500">534 connections</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-lg font-semibold text-gray-800" data-mock="true">227</p>
+                                        <p class="text-sm text-green-600">+22%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Top Performing Posts -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Top Performing Posts</h4>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg" data-mock="true">
+                                <div class="flex-shrink-0">
+                                    <i class="fab fa-instagram text-pink-500 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-medium text-gray-800">Morning coffee specials are here! ☕</p>
+                                    <p class="text-sm text-gray-600 mt-1">Posted 3 days ago</p>
+                                    <div class="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                                        <span><i class="fas fa-heart mr-1"></i>324 likes</span>
+                                        <span><i class="fas fa-comment mr-1"></i>45 comments</span>
+                                        <span><i class="fas fa-share mr-1"></i>12 shares</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-lg font-semibold text-green-600">94%</p>
+                                    <p class="text-xs text-gray-500">Engagement</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg" data-mock="true">
+                                <div class="flex-shrink-0">
+                                    <i class="fab fa-facebook text-blue-600 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-medium text-gray-800">Behind the scenes: How we roast our beans</p>
+                                    <p class="text-sm text-gray-600 mt-1">Posted 1 week ago</p>
+                                    <div class="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                                        <span><i class="fas fa-heart mr-1"></i>198 likes</span>
+                                        <span><i class="fas fa-comment mr-1"></i>23 comments</span>
+                                        <span><i class="fas fa-share mr-1"></i>8 shares</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-lg font-semibold text-green-600">87%</p>
+                                    <p class="text-xs text-gray-500">Engagement</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: AnalyticsView -->
+            
+            <!-- @COMPONENT: LibraryView [content library] -->
+            <div id="library-view" class="content-view p-6 hidden">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-800">Content Library</h3>
+                            <p class="text-sm text-gray-500 mt-1">Manage all your content drafts and published posts</p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <select class="form-select text-sm border-gray-300 rounded-lg">
+                                <option>All Content</option>
+                                <option>Drafts</option>
+                                <option>Published</option>
+                                <option>Scheduled</option>
+                            </select>
+                            <button class="bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-600 transition-colors">
+                                <i class="fas fa-plus mr-2"></i>New Draft
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Content Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Draft Content Item -->
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-mock="true">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Draft</span>
+                                    <div class="flex space-x-1">
+                                        <i class="fab fa-facebook text-blue-600 text-sm"></i>
+                                        <i class="fab fa-instagram text-pink-500 text-sm"></i>
+                                    </div>
+                                </div>
+                                <button class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                            <p class="text-gray-800 mb-2 line-clamp-3">New seasonal menu items are here! Try our pumpkin spice latte and apple cinnamon muffins...</p>
+                            <div class="text-xs text-gray-500 mb-3">Created 2 days ago</div>
+                            <div class="flex items-center justify-between">
+                                <button class="text-primary-600 hover:text-primary-700 text-sm">
+                                    <i class="fas fa-edit mr-1"></i>Edit
+                                </button>
+                                <button class="bg-primary-500 text-white px-3 py-1 rounded text-sm hover:bg-primary-600">
+                                    Publish
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Published Content Item -->
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-mock="true">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Published</span>
+                                    <div class="flex space-x-1">
+                                        <i class="fab fa-instagram text-pink-500 text-sm"></i>
+                                        <i class="fab fa-facebook text-blue-600 text-sm"></i>
+                                        <i class="fab fa-twitter text-blue-400 text-sm"></i>
+                                    </div>
+                                </div>
+                                <button class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                            <p class="text-gray-800 mb-2 line-clamp-3">Good morning! ☕ Fresh coffee and warm pastries await you. What's your Monday motivation?</p>
+                            <div class="text-xs text-gray-500 mb-3">Published yesterday • 156 engagements</div>
+                            <div class="flex items-center justify-between">
+                                <button class="text-primary-600 hover:text-primary-700 text-sm">
+                                    <i class="fas fa-chart-bar mr-1"></i>View Analytics
+                                </button>
+                                <button class="text-gray-600 hover:text-gray-700 text-sm">
+                                    <i class="fas fa-copy mr-1"></i>Duplicate
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Scheduled Content Item -->
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-mock="true">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Scheduled</span>
+                                    <div class="flex space-x-1">
+                                        <i class="fab fa-linkedin text-blue-700 text-sm"></i>
+                                    </div>
+                                </div>
+                                <button class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                            <p class="text-gray-800 mb-2 line-clamp-3">Coffee industry insights: The importance of sustainable sourcing for small businesses...</p>
+                            <div class="text-xs text-gray-500 mb-3">Scheduled for Tomorrow 9:00 AM</div>
+                            <div class="flex items-center justify-between">
+                                <button class="text-primary-600 hover:text-primary-700 text-sm">
+                                    <i class="fas fa-edit mr-1"></i>Edit
+                                </button>
+                                <button class="text-gray-600 hover:text-gray-700 text-sm">
+                                    <i class="fas fa-clock mr-1"></i>Reschedule
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- More content items... -->
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-mock="true">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Published</span>
+                                    <div class="flex space-x-1">
+                                        <i class="fab fa-facebook text-blue-600 text-sm"></i>
+                                    </div>
+                                </div>
+                                <button class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                            <p class="text-gray-800 mb-2 line-clamp-3">Weekend brunch special: fluffy pancakes with fresh berries and locally sourced honey 🥞</p>
+                            <div class="text-xs text-gray-500 mb-3">Published 3 days ago • 243 engagements</div>
+                            <div class="flex items-center justify-between">
+                                <button class="text-primary-600 hover:text-primary-700 text-sm">
+                                    <i class="fas fa-chart-bar mr-1"></i>View Analytics
+                                </button>
+                                <button class="text-gray-600 hover:text-gray-700 text-sm">
+                                    <i class="fas fa-copy mr-1"></i>Duplicate
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-mock="true">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Draft</span>
+                                    <div class="flex space-x-1">
+                                        <i class="fab fa-instagram text-pink-500 text-sm"></i>
+                                    </div>
+                                </div>
+                                <button class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                            <p class="text-gray-800 mb-2 line-clamp-3">Customer spotlight: Meet Jane, our regular who inspired our new lavender latte blend ☕💜</p>
+                            <div class="text-xs text-gray-500 mb-3">Created 1 week ago</div>
+                            <div class="flex items-center justify-between">
+                                <button class="text-primary-600 hover:text-primary-700 text-sm">
+                                    <i class="fas fa-edit mr-1"></i>Edit
+                                </button>
+                                <button class="bg-primary-500 text-white px-3 py-1 rounded text-sm hover:bg-primary-600">
+                                    Publish
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-mock="true">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Scheduled</span>
+                                    <div class="flex space-x-1">
+                                        <i class="fab fa-twitter text-blue-400 text-sm"></i>
+                                        <i class="fab fa-instagram text-pink-500 text-sm"></i>
+                                    </div>
+                                </div>
+                                <button class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                            <p class="text-gray-800 mb-2 line-clamp-3">Friday feeling! 🎉 Join us for our weekly live music session starting at 7 PM</p>
+                            <div class="text-xs text-gray-500 mb-3">Scheduled for Friday 5:00 PM</div>
+                            <div class="flex items-center justify-between">
+                                <button class="text-primary-600 hover:text-primary-700 text-sm">
+                                    <i class="fas fa-edit mr-1"></i>Edit
+                                </button>
+                                <button class="text-gray-600 hover:text-gray-700 text-sm">
+                                    <i class="fas fa-clock mr-1"></i>Reschedule
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: LibraryView -->
+        </main>
+        <!-- @END_COMPONENT: MainContent -->
+    </div>
+    <!-- @END_COMPONENT: MainLayout -->
+    
+    <script>
+        // TODO: Implement business logic, API calls, and state management
+        
+        (function() {
+            'use strict';
+            
+            // Navigation functionality
+            const navItems = document.querySelectorAll('.nav-item');
+            const contentViews = document.querySelectorAll('.content-view');
+            const pageTitle = document.getElementById('page-title');
+            const pageSubtitle = document.getElementById('page-subtitle');
+            
+            const pageData = {
+                dashboard: {
+                    title: 'Dashboard',
+                    subtitle: 'Welcome back! Here\'s your social media overview.'
+                },
+                create: {
+                    title: 'Create Content',
+                    subtitle: 'Create engaging posts with AI assistance'
+                },
+                calendar: {
+                    title: 'Content Calendar',
+                    subtitle: 'View and manage your scheduled posts'
+                },
+                approval: {
+                    title: 'Approval Queue',
+                    subtitle: 'Review and approve content before publishing'
+                },
+                analytics: {
+                    title: 'Analytics',
+                    subtitle: 'Track your social media performance across all platforms'
+                },
+                library: {
+                    title: 'Content Library',
+                    subtitle: 'Manage all your content drafts and published posts'
+                }
+            };
+            
+            function switchView(viewName) {
+                // Update navigation active state
+                navItems.forEach(item => {
+                    item.classList.remove('active', 'bg-primary-50', 'text-primary-700', 'border', 'border-primary-200');
+                    item.classList.add('text-gray-600');
+                });
+                
+                const activeNavItem = document.querySelector(`[data-nav="${viewName}"]`);
+                if (activeNavItem) {
+                    activeNavItem.classList.add('active', 'bg-primary-50', 'text-primary-700', 'border', 'border-primary-200');
+                    activeNavItem.classList.remove('text-gray-600');
+                }
+                
+                // Hide all views
+                contentViews.forEach(view => view.classList.add('hidden'));
+                
+                // Show selected view
+                const targetView = document.getElementById(`${viewName}-view`);
+                if (targetView) {
+                    targetView.classList.remove('hidden');
+                }
+                
+                // Update page header
+                if (pageData[viewName]) {
+                    pageTitle.textContent = pageData[viewName].title;
+                    pageSubtitle.textContent = pageData[viewName].subtitle;
+                }
+            }
+            
+            // Add click handlers to navigation items
+            navItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const viewName = item.getAttribute('data-nav');
+                    switchView(viewName);
+                });
+            });
+            
+            // Mock interactions for demonstration
+            document.addEventListener('click', function(e) {
+                if (e.target.matches('[data-event*="click:quickCreate"], [data-event*="click:createPost"]')) {
+                    switchView('create');
+                } else if (e.target.matches('[data-event*="click:schedulePost"]')) {
+                    switchView('calendar');
+                } else if (e.target.matches('[data-event*="click:generateAI"]')) {
+                    // Mock AI content generation
+                    alert('AI Content Generator: "Here are 3 new content ideas based on your café business..."');
+                } else if (e.target.matches('[data-event*="click:aiAssist"], [data-event*="click:aiSuggest"]')) {
+                    // Mock AI assistance
+                    alert('AI Assistant activated! Generating content suggestions...');
+                } else if (e.target.matches('[data-event*="click:approveContent"]')) {
+                    // Mock content approval
+                    e.target.closest('.border-amber-200').style.display = 'none';
+                    alert('Content approved and scheduled for publishing!');
+                } else if (e.target.matches('[data-event*="click:rejectContent"]')) {
+                    // Mock content rejection
+                    e.target.closest('.border-amber-200').style.display = 'none';
+                    alert('Content rejected. Reason can be added for feedback.');
+                }
+            });
+            
+            // Mock chart animations
+            const chartBars = document.querySelectorAll('.chart-bar');
+            setTimeout(() => {
+                chartBars.forEach(bar => {
+                    bar.style.opacity = '0.8';
+                    bar.addEventListener('mouseenter', () => bar.style.opacity = '1');
+                    bar.addEventListener('mouseleave', () => bar.style.opacity = '0.8');
+                });
+            }, 500);
+            
+        })();
+    </script>
+</body>
+</html>
