@@ -19,6 +19,7 @@ import Subscribe from "./pages/subscribe";
 import SubscriptionSuccess from "./pages/subscription-success";
 import AdminLogin from "./pages/admin-login";
 import AdminDashboard from "./pages/admin-dashboard";
+import ConnectPlatforms from "./pages/connect-platforms";
 import Sidebar from "./components/layout/sidebar";
 import Header from "./components/layout/header";
 
@@ -64,6 +65,7 @@ function Router() {
           <Route path="/pricing" component={Pricing} />
           <Route path="/subscribe" component={Subscribe} />
           <Route path="/subscription-success" component={SubscriptionSuccess} />
+          <Route path="/connect-platforms" component={ConnectPlatforms} />
           <Route path="/settings" component={Settings} />
           <Route path="/admin/login" component={AdminLogin} />
           <Route path="/admin/dashboard" component={AdminDashboard} />

@@ -9,7 +9,8 @@ import {
   FolderOpen, 
   Settings,
   Bot,
-  Rocket
+  Rocket,
+  Link2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -19,6 +20,7 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Create Content", href: "/create", icon: PlusCircle },
   { name: "Campaigns", href: "/campaigns", icon: Rocket },
+  { name: "Connect Platforms", href: "/connect-platforms", icon: Link2 },
   { name: "Content Calendar", href: "/calendar", icon: Calendar },
   { name: "Approval Queue", href: "/approval", icon: CheckCircle, badge: true },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
@@ -77,13 +79,13 @@ export default function Sidebar() {
       <div className="p-4 border-t border-border">
         <div className="flex items-center space-x-3">
           <img 
-            src={user?.avatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&w=40&h=40&fit=crop"} 
+            src={user?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&w=40&h=40&fit=crop"} 
             alt="User profile" 
             className="w-10 h-10 rounded-full object-cover" 
           />
           <div>
             <p className="text-sm font-medium text-foreground">
-              {user?.fullName || "Loading..."}
+              {user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : "Loading..."}
             </p>
             <p className="text-xs text-muted-foreground">
               {user?.businessName || "Business Owner"}

@@ -49,7 +49,15 @@ export const platforms = pgTable("platforms", {
   userId: varchar("user_id").references(() => users.id),
   accountId: text("account_id"),
   accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  tokenExpiry: timestamp("token_expiry"),
+  scope: text("scope"), // OAuth permissions granted
+  platformUserId: text("platform_user_id"), // User ID on the platform
+  platformUsername: text("platform_username"), // Username on the platform
+  connectionStatus: text("connection_status").default("active"), // active, expired, revoked, error
+  lastSyncAt: timestamp("last_sync_at"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const campaigns = pgTable("campaigns", {

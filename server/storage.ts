@@ -25,8 +25,18 @@ export interface IStorage {
   
   // Platforms
   getPlatformsByUserId(userId: string): Promise<Platform[]>;
+  getUserPlatforms(userId: string): Promise<Platform[]>;
   createPlatform(platform: InsertPlatform): Promise<Platform>;
   updatePlatform(id: string, updates: Partial<Platform>): Promise<Platform | undefined>;
+  connectPlatform(userId: string, connectionData: {
+    platformId: string;
+    accessToken?: string;
+    refreshToken?: string;
+    scope?: string;
+    platformUserId?: string;
+    platformUsername?: string;
+  }): Promise<Platform>;
+  disconnectPlatform(userId: string, platformId: string): Promise<boolean>;
   
   // Campaigns
   getCampaignsByUserId(userId: string): Promise<Campaign[]>;
@@ -536,6 +546,96 @@ export class MemStorage implements IStorage {
     const updatedPlatform = { ...platform, ...updates };
     this.platforms.set(id, updatedPlatform);
     return updatedPlatform;
+  }
+
+  async getUserPlatforms(userId: string): Promise<Platform[]> {
+    return Array.from(this.platforms.values()).filter(platform => platform.userId === userId);
+  }
+
+  async connectPlatform(userId: string, connectionData: {
+    platformId: string;
+    accessToken?: string;
+    refreshToken?: string;
+    scope?: string;
+    platformUserId?: string;
+    platformUsername?: string;
+  }): Promise<Platform> {
+    const { platformId, accessToken, refreshToken, scope, platformUserId, platformUsername } = connectionData;
+    
+    // Find existing platform connection for this user and platform
+    const existingPlatform = Array.from(this.platforms.values())
+      .find(p => p.userId === userId && p.name === platformId);
+    
+    if (existingPlatform) {
+      // Update existing connection
+      const updatedPlatform = {
+        ...existingPlatform,
+        isConnected: true,
+        accessToken: accessToken || existingPlatform.accessToken,
+        refreshToken: refreshToken || undefined,
+        scope: scope || undefined,
+        platformUserId: platformUserId || undefined,
+        platformUsername: platformUsername || undefined,
+        connectionStatus: "active",
+        lastSyncAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.platforms.set(existingPlatform.id, updatedPlatform);
+      return updatedPlatform;
+    } else {
+      // Create new platform connection
+      const platformMap: { [key: string]: { name: string; icon: string; color: string } } = {
+        instagram: { name: "Instagram", icon: "fab fa-instagram", color: "#E1306C" },
+        facebook: { name: "Facebook", icon: "fab fa-facebook", color: "#1877F2" },
+        twitter: { name: "X (Twitter)", icon: "fab fa-twitter", color: "#1DA1F2" },
+        linkedin: { name: "LinkedIn", icon: "fab fa-linkedin", color: "#0A66C2" },
+        tiktok: { name: "TikTok", icon: "fab fa-tiktok", color: "#000000" },
+      };
+      
+      const platformInfo = platformMap[platformId.toLowerCase()] || {
+        name: platformId,
+        icon: "fab fa-social",
+        color: "#333333"
+      };
+      
+      return await this.createPlatform({
+        name: platformInfo.name,
+        icon: platformInfo.icon,
+        color: platformInfo.color,
+        isConnected: true,
+        userId,
+        accountId: platformUserId || `${platformId}_${userId}`,
+        accessToken: accessToken || null,
+        refreshToken: refreshToken || null,
+        scope: scope || null,
+        platformUserId: platformUserId || null,
+        platformUsername: platformUsername || null,
+        connectionStatus: "active",
+        lastSyncAt: new Date(),
+      });
+    }
+  }
+
+  async disconnectPlatform(userId: string, platformId: string): Promise<boolean> {
+    const platforms = Array.from(this.platforms.values())
+      .filter(p => p.userId === userId && (p.name === platformId || p.id === platformId));
+    
+    if (platforms.length === 0) return false;
+    
+    // Update platform to disconnected status
+    for (const platform of platforms) {
+      const updatedPlatform = {
+        ...platform,
+        isConnected: false,
+        accessToken: null,
+        refreshToken: null,
+        connectionStatus: "disconnected",
+        updatedAt: new Date(),
+      };
+      this.platforms.set(platform.id, updatedPlatform);
+    }
+    
+    return true;
   }
 
   // Campaigns

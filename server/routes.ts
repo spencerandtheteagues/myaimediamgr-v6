@@ -128,13 +128,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user's connected platforms
-  app.get("/api/platforms", async (req: any, res) => {
+  app.get("/api/platforms", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || "demo-user-1";
-      const platforms = await storage.getPlatformsByUserId(userId);
+      const platforms = await storage.getUserPlatforms(userId);
       res.json(platforms);
     } catch (error) {
+      console.error("Error fetching platforms:", error);
       res.status(500).json({ message: "Failed to get platforms" });
+    }
+  });
+
+  // Connect a platform
+  app.post("/api/platforms/:platformId/connect", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || "demo-user-1";
+      const { platformId } = req.params;
+      const { accessToken, refreshToken, scope, platformUserId, platformUsername } = req.body;
+      
+      const platform = await storage.connectPlatform(userId, {
+        platformId,
+        accessToken,
+        refreshToken,
+        scope,
+        platformUserId,
+        platformUsername,
+      });
+      
+      res.json(platform);
+    } catch (error) {
+      console.error("Error connecting platform:", error);
+      res.status(500).json({ message: "Failed to connect platform" });
+    }
+  });
+
+  // Disconnect a platform
+  app.delete("/api/platforms/:platformId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || "demo-user-1";
+      const { platformId } = req.params;
+      
+      await storage.disconnectPlatform(userId, platformId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error disconnecting platform:", error);
+      res.status(500).json({ message: "Failed to disconnect platform" });
+    }
+  });
+
+  // OAuth callback handler (for production OAuth flows)
+  app.get("/api/auth/:platform/callback", async (req, res) => {
+    try {
+      const { platform } = req.params;
+      const { code, state } = req.query;
+      
+      // In production, this would exchange the code for access tokens
+      // For now, redirect back to connect page with success
+      res.redirect(`/connect-platforms?connected=${platform}`);
+    } catch (error) {
+      console.error("OAuth callback error:", error);
+      res.redirect("/connect-platforms?error=oauth_failed");
     }
   });
 
