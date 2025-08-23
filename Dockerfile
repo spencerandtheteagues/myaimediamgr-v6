@@ -1,11 +1,19 @@
-# --- Stage 1: Frontend Builder ---
-FROM node:20-alpine AS frontend-builder
+# --- Stage 1: Builder ---
+FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
+
+# Copy all source code
 COPY . .
+
+# Build the client
 WORKDIR /app/client
+RUN npm install
 RUN npm run build
+
+# Build the server
+WORKDIR /app
+RUN npm run build:server
+
 
 # --- Stage 2: Production ---
 FROM node:20-alpine
@@ -19,7 +27,8 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 # Copy built assets from the builder stage
-COPY --from=frontend-builder /app/dist ./dist
+COPY --from=builder /app/client/dist/public ./dist/public
+COPY --from=builder /app/dist ./dist
 
 # Copy server and shared code
 COPY server ./server
