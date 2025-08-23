@@ -76,6 +76,7 @@ function Router() {
   );
 }
 
+// Force rebuild to inject environment variables
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
