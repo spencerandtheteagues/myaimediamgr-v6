@@ -1,5 +1,6 @@
 # Build stage
-FROM node:20-alpine AS builder
+# Force cache invalidation 2025-08-23-02
+FROM python:3.9-slim AS runtime
 
 WORKDIR /app
 
