@@ -2,34 +2,25 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# 1) Copy manifests first
+# 1) Bring in root manifests
 COPY package.json package-lock.json ./
 
-# 2) Ensure the lockfile matches package.json, then do a clean install
-#    (this updates *the in-container* lockfile if needed)
+# 2) Bring in client manifest early so we can read it
+COPY client/package.json ./client/package.json
+
+# 3) Merge client deps → root package.json (no versions guessed; uses client's)
+RUN node -e "const fs=require('fs');   const root=JSON.parse(fs.readFileSync('package.json','utf8'));   const client=JSON.parse(fs.readFileSync('client/package.json','utf8'));   const add=(from, field)=>{ if(!from) return; root[field] ||= {};     for(const [k,v] of Object.entries(from)) if(!root[field][k]) root[field][k]=v; };   add(client.dependencies,'dependencies');   add(client.devDependencies,'devDependencies');   fs.writeFileSync('package.json', JSON.stringify(root,null,2));   console.log('Merged client deps into root');"
+
+# 4) Sync lockfile to the (now-updated) package.json, then clean install
 RUN npm install --package-lock-only --ignore-scripts --no-audit --no-fund  && npm ci
 
-# 3) Copy the rest of the source
+# 5) Copy the rest of the source
 COPY . .
 
-# Sanity Checks before build
-# 0) Make sure the client actually has index.html at the configured root
-RUN test -f client/index.html || (echo "Missing client/index.html at Vite root" && exit 1)
+# (optional) sanity checks — keep these!
+RUN node -e "require.resolve('react/jsx-runtime');              require.resolve('@vitejs/plugin-react');              require.resolve('postcss');              require.resolve('tailwindcss');              require.resolve('wouter');              require.resolve('@tanstack/react-query');              console.log('Sanity: all critical deps resolved')"
 
-# 1) React present for react/jsx-runtime
-RUN node -e "require.resolve('react/jsx-runtime'); console.log('OK: react/jsx-runtime')"
-
-# 2) Vite React plugin present
-RUN node -e "require.resolve('@vitejs/plugin-react'); console.log('OK: @vitejs/plugin-react')"
-
-# 3) Tailwind/PostCSS (only if you’re using Tailwind)
-RUN node -e "require.resolve('postcss'); require.resolve('tailwindcss'); console.log('OK: postcss + tailwindcss')"
-RUN node -e "require.resolve('wouter'); console.log('OK: wouter')"
-
-# 4) Show which config Vite sees (helps if it still can’t find index.html)
-RUN node -e "console.log('vite root=', require('path').resolve('client'))"
-
-# 4) Build client + server (assumes your scripts produce dist/public + dist/index.cjs)
+# 6) Build client + server
 RUN npm run build
 
 # -------- Runtime --------
@@ -37,15 +28,10 @@ FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 
-# 5) Use the SAME manifest + lockfile that produced the build
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/package-lock.json ./
-
-# 6) Install exactly what's in that lock, prod-only
 RUN npm ci --omit=dev
 
-# 7) Copy the built artifacts
 COPY --from=builder /app/dist ./dist
-
 EXPOSE 8080
-CMD ["node", "dist/index.cjs"]
+CMD ["node","dist/index.cjs"]
