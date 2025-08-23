@@ -7,7 +7,7 @@ const app = express();
 // The server serves files from /app/dist/public.
 const publicDir = path.join(process.cwd(), "dist", "public");
 
-app.use(express.static(publicDir, { maxAge: "1y" }));
+app.use(express.static(publicDir));
 app.get("*", (_req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
