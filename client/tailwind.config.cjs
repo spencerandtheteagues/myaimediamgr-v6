@@ -1,18 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  safelist: [
-    "bg-background",
-    "text-foreground",
-    "border-border",
-    "bg-card","text-card-foreground",
-    "bg-muted","text-muted-foreground",
-    "ring","ring-offset-background"
-  ],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  safelist: ["bg-background", "text-foreground", "border-border"],
   theme: {
     container: { center: true, padding: "2rem", screens: { "2xl": "1400px" } },
     extend: {
@@ -23,12 +13,12 @@ module.exports = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
-        secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
-        destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
-        muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
-        accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
-        popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
-        card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
+        secondary:{ DEFAULT: "hsl(var(--secondary))", foreground:"hsl(var(--secondary-foreground))" },
+        destructive:{ DEFAULT:"hsl(var(--destructive))", foreground:"hsl(var(--destructive-foreground))" },
+        muted: { DEFAULT:"hsl(var(--muted))", foreground:"hsl(var(--muted-foreground))" },
+        accent:{ DEFAULT:"hsl(var(--accent))", foreground:"hsl(var(--accent-foreground))" },
+        popover:{ DEFAULT:"hsl(var(--popover))", foreground:"hsl(var(--popover-foreground))" },
+        card:{ DEFAULT:"hsl(var(--card))", foreground:"hsl(var(--card-foreground))" },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -37,5 +27,5 @@ module.exports = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [],
 };

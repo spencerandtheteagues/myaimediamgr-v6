@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* design tokens for shadcn-style classes */
+/* shadcn-style tokens */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -48,6 +48,7 @@
     --ring: 215 20.2% 65.1%;
   }
 }
+
 @layer base {
   * { @apply border-border; }
   body { @apply bg-background text-foreground; }
