@@ -22,5 +22,6 @@ export default defineConfig({
   plugins: [react()],
   resolve: { alias: [{ find: "@", replacement: normalizePath(resolve(clientRoot, "src")) }] },
   css: { postcss: resolve(clientRoot, "postcss.config.cjs") },
+  base: "/",
   build: { outDir: resolve(__dirname, "dist/public"), emptyOutDir: true, target: "es2020" },
 });

@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
+    "scripts": {
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build --config vite.config.mts",
-    "build:server": "esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --external:lightningcss"
+    "build:server": "esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --external:lightningcss",
+    "preview": "vite preview --config vite.config.mts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
