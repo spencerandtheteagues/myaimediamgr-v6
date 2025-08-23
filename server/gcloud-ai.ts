@@ -202,15 +202,47 @@ ${request.callToAction}
   }
 }
 
-/**
- * Generate image using Imagen 4
- */
+// --- put near the top of server/gcloud-ai.ts (after imports) ---
+const publicRoot = path.resolve(import.meta.dirname, "public");
+const genRoot = path.join(publicRoot, "generated");
+const genImages = path.join(genRoot, "images");
+const genVideos = path.join(genRoot, "videos");
+
+// Guarantee folders exist (works in Railway ephemeral FS)
+for (const d of [publicRoot, genRoot, genImages, genVideos]) {
+  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+}
+
+// Helper to create a branded SVG slate
+function slateSVG(width: number, height: number, title: string, subtitle?: string) {
+  const safeTitle = (title || "").slice(0, 120);
+  const safeSub = (subtitle || "").slice(0, 200);
+  return `
+  <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100%" height="100%" fill="#0F1122"/>
+    <text x="40" y="80" font-family="Arial, Helvetica, sans-serif" font-size="42" fill="#A855F7">MyAiMediaMgr</text>
+    <text x="40" y="140" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#EAEAEA">
+      ${safeTitle.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+    </text>
+    ${safeSub ? `<text x="40" y="190" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#CFCFCF">
+      ${safeSub.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+    </text>` : ""}
+  </svg>
+  `;
+}
+
 export async function generateImage(request: ImageGenerationRequest): Promise<string> {
-  // Check if Google Cloud is configured
+  // If Google Cloud isn't configured, produce a local placeholder PNG we can serve
   if (!isGoogleCloudConfigured || !vertexAI) {
-    // Return placeholder image URL for development mode
-    const placeholderDescription = `[Development Mode] Image: ${request.prompt} | Style: ${request.visualStyle}`;
-    return `https://via.placeholder.com/1080x1080/9333ea/ffffff?text=${encodeURIComponent(placeholderDescription.substring(0, 50))}`;
+    const id = uuidv4();
+    const pngPath = path.join(genImages, `${id}.png`);
+    const svg = slateSVG(1080, 1080, request.prompt, `Style: ${request.visualStyle}`);
+
+    const png = await sharp(Buffer.from(svg)).png().toBuffer();
+    await fsPromises.writeFile(pngPath, png);
+
+    // Return a public URL (Express serves /dist/public/**)
+    return `/generated/images/${path.basename(pngPath)}`;
   }
 
   const enhancedPrompt = `${request.prompt}
@@ -289,7 +321,7 @@ async function generatePlaceholderImage(request: ImageGenerationRequest): Promis
   const prompt = `Create a detailed image description for: ${request.prompt}
   Style: ${request.visualStyle}
   This will be used as a placeholder for social media content.`;
-
+  
   const result = await geminiFlashModel.generateContent({
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
   });
@@ -300,14 +332,37 @@ async function generatePlaceholderImage(request: ImageGenerationRequest): Promis
   return `placeholder://image?description=${encodeURIComponent(text.substring(0, 100))}`;
 }
 
-/**
- * Generate video using Veo 3 Fast
- */
 export async function generateVideo(request: VideoGenerationRequest): Promise<string> {
-  // Check if Google Cloud is configured
+  // If Google Cloud isn't configured, produce a short MP4 from a PNG slate
   if (!isGoogleCloudConfigured || !vertexAI) {
-    // Return placeholder video URL for development mode
-    return `https://placeholder.video/development-mode?prompt=${encodeURIComponent(request.prompt.substring(0, 50))}&style=${request.visualStyle}`;
+    const id = uuidv4();
+    const pngPath = path.join(genImages, `${id}.png`);
+    const mp4Path = path.join(genVideos, `${id}.mp4`);
+    const seconds = Math.max(2, Math.min(12, request.duration || 6));
+
+    // 1) make a 1024x576 slate PNG
+    const svg = slateSVG(1024, 576, request.prompt, `Style: ${request.visualStyle}`);
+    const png = await sharp(Buffer.from(svg)).png().toBuffer();
+    await fsPromises.writeFile(pngPath, png);
+
+    // 2) turn PNG into a short MP4 (no audio), streamable
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg()
+        .input(pngPath)
+        .inputOptions(["-loop 1"])
+        .outputOptions([
+          `-t ${seconds}`,
+          "-r 24",
+          "-c:v libx264",
+          "-pix_fmt yuv420p",
+          "-movflags +faststart",
+        ])
+        .save(mp4Path)
+        .on("end", () => resolve())
+        .on("error", (err) => reject(err));
+    });
+
+    return `/generated/videos/${path.basename(mp4Path)}`;
   }
 
   const enhancedPrompt = `${request.prompt}
@@ -451,7 +506,7 @@ export async function generateCampaign(
       // Generate content for this post
       const contentRequest = {
         ...request,
-        additionalContext: `Theme for this post: ${theme}. This is post ${postIndex + 1} of 14 in the campaign.`,
+        additionalContext: `Theme for this post: ${theme}. This is post ${postIndex + 1} of 14 in the campaign.`, 
       };
       
       const [textContent, imagePrompt] = await Promise.all([
@@ -501,7 +556,7 @@ async function generateImagePrompt(
   const result = await geminiFlashModel.generateContent({
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
   });
-  const response = result.response;
+  const response = await result.response;
   const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
   return text || 'Generate a professional, eye-catching image for social media advertising';
 }
