@@ -16,7 +16,7 @@ RUN node -e "const fs=require('fs'), p=require('path');   const candidates=['cli
 RUN npm install --package-lock-only --ignore-scripts --no-audit --no-fund  && npm ci
 
 # (Optional) Sanity checks to fail fast if key deps are missing
-RUN node -e "require.resolve('react/jsx-runtime');              require.resolve('@vitejs/plugin-react');              console.log('Sanity: react + plugin-react present')"
+RUN node -e "require.resolve('react/jsx-runtime');              require.resolve('@vitejs/plugin-react');              require.resolve('@tanstack/react-query');              console.log('Sanity: react + plugin-react + react-query present')"
 
 # Build: emits dist/public (client) + dist/index.cjs (server)
 RUN npm run build
