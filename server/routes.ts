@@ -545,53 +545,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get dashboard analytics
-  app.get("/api/analytics/dashboard", async (req, res) => {
+  app.get("/api/analytics/dashboard", isAuthenticated, async (req: any, res) => {
     try {
-      // Return mock analytics data for dashboard
+      const userId = req.user.claims.sub;
+      
+      // Get real data from storage
+      const userPosts = await storage.getPostsByUserId(userId);
+      const userPlatforms = await storage.getPlatformsByUserId(userId);
+      
+      // Calculate real metrics
+      const totalPosts = userPosts.length;
+      const pendingApproval = userPosts.filter(post => post.status === 'pending').length;
+      const scheduledPosts = userPosts.filter(post => post.status === 'scheduled').length;
+      const publishedPosts = userPosts.filter(post => post.status === 'published');
+      
+      // Calculate engagement from real posts
+      const totalEngagement = publishedPosts.reduce((total, post) => {
+        if (post.engagementData) {
+          return total + (post.engagementData.likes || 0) + (post.engagementData.comments || 0) + (post.engagementData.shares || 0);
+        }
+        return total;
+      }, 0);
+      
+      const totalReach = publishedPosts.reduce((total, post) => {
+        return total + (post.engagementData?.reach || 0);
+      }, 0);
+      
+      // Platform performance from connected platforms
+      const platformPerformance = userPlatforms.map(platform => ({
+        platform: platform.name,
+        followers: 0, // This would come from platform API in real implementation
+        engagement: publishedPosts
+          .filter(post => post.platforms.includes(platform.name))
+          .reduce((total, post) => total + (post.engagementData?.likes || 0), 0),
+        change: 0, // This would be calculated from historical data
+      }));
+      
       const dashboardData = {
-        totalPosts: 47,
-        totalEngagement: 2800,
-        pendingApproval: 3,
-        scheduledPosts: 12,
+        totalPosts,
+        totalEngagement,
+        pendingApproval,
+        scheduledPosts,
         metrics: {
-          totalReach: 15200,
-          engagement: 2800,
-          newFollowers: 1200,
-          clickRate: 4.2,
+          totalReach,
+          engagement: totalEngagement,
+          newFollowers: 0, // This would come from platform APIs
+          clickRate: publishedPosts.length > 0 ? 
+            (publishedPosts.reduce((total, post) => total + (post.engagementData?.clicks || 0), 0) / publishedPosts.length) : 0,
         },
-        platformPerformance: [
-          { platform: "Instagram", followers: 2100, engagement: 1234, change: 15 },
-          { platform: "Facebook", followers: 1800, engagement: 892, change: 8 },
-          { platform: "X (Twitter)", followers: 956, engagement: 445, change: -3 },
-          { platform: "LinkedIn", followers: 534, engagement: 227, change: 22 },
-        ],
-        engagementOverTime: [
-          { date: "Jan 1", value: 60 },
-          { date: "Jan 5", value: 80 },
-          { date: "Jan 10", value: 45 },
-          { date: "Jan 15", value: 95 },
-          { date: "Jan 20", value: 70 },
-          { date: "Jan 25", value: 110 },
-          { date: "Today", value: 85 },
-        ],
-        topPerformingPosts: [
-          {
-            id: "1",
-            platform: "Instagram",
-            content: "Morning coffee specials are here! ☕",
-            publishedAt: "3 days ago",
-            engagement: { likes: 324, comments: 45, shares: 12 },
-            engagementRate: 94,
-          },
-          {
-            id: "2",
-            platform: "Facebook",
-            content: "Behind the scenes: How we roast our beans",
-            publishedAt: "1 week ago",
-            engagement: { likes: 198, comments: 23, shares: 8 },
-            engagementRate: 87,
-          },
-        ],
+        platformPerformance,
+        engagementOverTime: [], // Real time series data would be calculated from historical analytics
+        topPerformingPosts: publishedPosts
+          .sort((a, b) => {
+            const aEngagement = (a.engagementData?.likes || 0) + (a.engagementData?.comments || 0) + (a.engagementData?.shares || 0);
+            const bEngagement = (b.engagementData?.likes || 0) + (b.engagementData?.comments || 0) + (b.engagementData?.shares || 0);
+            return bEngagement - aEngagement;
+          })
+          .slice(0, 3)
+          .map(post => ({
+            id: post.id,
+            platform: post.platforms[0] || 'Unknown',
+            content: post.content.substring(0, 50) + (post.content.length > 50 ? '...' : ''),
+            publishedAt: post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : 'Not published',
+            engagement: {
+              likes: post.engagementData?.likes || 0,
+              comments: post.engagementData?.comments || 0,
+              shares: post.engagementData?.shares || 0,
+            },
+            engagementRate: post.engagementData ? 
+              (post.engagementData.likes + post.engagementData.comments + post.engagementData.shares) : 0,
+          })),
       };
 
       res.json(dashboardData);
@@ -604,18 +627,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// Mock AI suggestion generator
+// AI suggestion generator would use real AI service in production
 function generateAISuggestions(prompt: string): string[] {
-  const suggestions = [
-    "☕ Start your Monday with our signature blend! What's your go-to morning coffee order? #MondayMotivation #CoffeeLovers",
-    "Fresh pastries, warm atmosphere, and the perfect cup of coffee - that's what makes mornings special at our café ✨",
-    "Behind the scenes: Our baristas craft each latte with love and precision. Come taste the difference! ☕❤️",
-    "🥐 Tuesday treats are here! Enjoy our freshly baked croissants with your favorite coffee blend. #TuesdayTreats #FreshBaked",
-    "What's your perfect coffee pairing? Tell us in the comments! ☕🥧 #CoffeePairing #CustomerChoice",
-    "Weekend vibes at the café! ☕ Join us for a relaxing coffee break and catch up with friends. #WeekendVibes #CafeLife",
-  ];
-
-  // Return 3 random suggestions
-  const shuffled = suggestions.sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, 3);
+  // In production, this would call the AI service
+  // For now, return empty array so users get real AI suggestions when AI is enabled
+  return [];
 }
