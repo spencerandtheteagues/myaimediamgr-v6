@@ -1,12 +1,12 @@
 {
   "name": "rest-express",
   "version": "1.0.0",
-  "type": "module",
+  "type": "commonjs",
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --external:lightningcss",
-    "start": "NODE_ENV=production node dist/index.js",
+    "build": "vite build && esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --external:lightningcss",
+    "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "db:push": "drizzle-kit push"
   },
