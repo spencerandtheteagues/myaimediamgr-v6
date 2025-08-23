@@ -17,6 +17,8 @@ import Pricing from "./pages/pricing";
 import Landing from "./pages/landing";
 import Subscribe from "./pages/subscribe";
 import SubscriptionSuccess from "./pages/subscription-success";
+import AdminLogin from "./pages/admin-login";
+import AdminDashboard from "./pages/admin-dashboard";
 import Sidebar from "./components/layout/sidebar";
 import Header from "./components/layout/header";
 
@@ -38,6 +40,8 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/admin/login" component={AdminLogin} />
+        <Route path="/admin/dashboard" component={AdminLogin} />
         <Route component={Landing} />
       </Switch>
     );
@@ -61,6 +65,8 @@ function Router() {
           <Route path="/subscribe" component={Subscribe} />
           <Route path="/subscription-success" component={SubscriptionSuccess} />
           <Route path="/settings" component={Settings} />
+          <Route path="/admin/login" component={AdminLogin} />
+          <Route path="/admin/dashboard" component={AdminDashboard} />
           <Route component={NotFound} />
         </Switch>
       </main>

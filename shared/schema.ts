@@ -33,6 +33,9 @@ export const users = pgTable("users", {
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   trialEndsAt: timestamp("trial_ends_at"),
+  // Admin fields
+  isAdmin: boolean("is_admin").notNull().default(false),
+  adminPassword: varchar("admin_password"), // For admin-only login
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

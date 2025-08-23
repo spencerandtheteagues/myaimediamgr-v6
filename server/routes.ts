@@ -6,10 +6,14 @@ import { z } from "zod";
 import * as gcloudAI from "./gcloud-ai";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { registerStripeRoutes } from "./stripe-routes";
+import { registerAdminRoutes } from "./admin-auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   await setupAuth(app);
+  
+  // Register admin routes
+  registerAdminRoutes(app);
   
   // Register Stripe payment routes
   registerStripeRoutes(app);

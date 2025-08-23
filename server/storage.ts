@@ -18,7 +18,10 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   updateUserCredits(userId: string, creditChange: number, description: string, type: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
+  deleteUser(id: string): Promise<boolean>;
   
   // Platforms
   getPlatformsByUserId(userId: string): Promise<Platform[]>;
@@ -111,6 +114,11 @@ export class MemStorage implements IStorage {
       subscriptionStatus: "active",
       subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       totalCreditsUsed: 0,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      trialEndsAt: null,
+      isAdmin: false,
+      adminPassword: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -182,8 +190,12 @@ export class MemStorage implements IStorage {
       {
         id: randomUUID(),
         userId: demoUser.id,
+        campaignId: null,
         content: "🥞 Weekend brunch is here! Join us for fluffy pancakes, fresh fruit, and the best coffee in town. Perfect way to start your Saturday! #WeekendBrunch #CafeLife #FreshEats",
         imageUrl: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1080&h=1080&fit=crop",
+        videoUrl: null,
+        imagePrompt: null,
+        videoPrompt: null,
         platforms: ["Facebook", "Instagram"],
         status: "pending",
         scheduledFor: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
@@ -199,8 +211,12 @@ export class MemStorage implements IStorage {
       {
         id: randomUUID(),
         userId: demoUser.id,
+        campaignId: null,
         content: "☕ Coffee Tip Tuesday: Did you know that grinding your coffee beans right before brewing preserves the oils and gives you the freshest flavor? Try it and taste the difference! #CoffeeTips #FreshBrew",
         imageUrl: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=1080&h=1080&fit=crop",
+        videoUrl: null,
+        imagePrompt: null,
+        videoPrompt: null,
         platforms: ["X (Twitter)", "LinkedIn"],
         status: "pending",
         scheduledFor: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
@@ -216,8 +232,12 @@ export class MemStorage implements IStorage {
       {
         id: randomUUID(),
         userId: demoUser.id,
+        campaignId: null,
         content: "✨ Watch our skilled barista create the perfect latte art! Each cup is crafted with love and precision. What's your favorite latte art design? 🎨☕ #LatteArt #BehindTheScenes #CoffeeArt",
         imageUrl: "https://images.unsplash.com/photo-1511920170033-f8396924c348?w=1080&h=1080&fit=crop",
+        videoUrl: null,
+        imagePrompt: null,
+        videoPrompt: null,
         platforms: ["Instagram"],
         status: "pending",
         scheduledFor: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), // 4 days from now
@@ -233,8 +253,12 @@ export class MemStorage implements IStorage {
       {
         id: randomUUID(),
         userId: demoUser.id,
+        campaignId: null,
         content: "☕ Start your Monday with our signature blend! What's your go-to morning coffee order? #MondayMotivation #CoffeeLovers",
         imageUrl: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1080&h=1080&fit=crop",
+        videoUrl: null,
+        imagePrompt: null,
+        videoPrompt: null,
         platforms: ["Instagram", "Facebook", "X (Twitter)"],
         status: "published",
         scheduledFor: null,
@@ -385,6 +409,11 @@ export class MemStorage implements IStorage {
       subscriptionStatus: insertUser.subscriptionStatus ?? "free",
       subscriptionEndDate: insertUser.subscriptionEndDate ?? null,
       totalCreditsUsed: 0,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      trialEndsAt: null,
+      isAdmin: false,
+      adminPassword: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -420,12 +449,30 @@ export class MemStorage implements IStorage {
         subscriptionStatus: upsertUser.subscriptionStatus ?? "free",
         subscriptionEndDate: upsertUser.subscriptionEndDate ?? null,
         totalCreditsUsed: upsertUser.totalCreditsUsed ?? 0,
+        stripeCustomerId: upsertUser.stripeCustomerId ?? null,
+        stripeSubscriptionId: upsertUser.stripeSubscriptionId ?? null,
+        trialEndsAt: upsertUser.trialEndsAt ?? null,
+        isAdmin: upsertUser.isAdmin ?? false,
+        adminPassword: upsertUser.adminPassword ?? null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
       this.users.set(id, newUser);
       return newUser;
     }
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    
+    const updatedUser = {
+      ...user,
+      ...updates,
+      updatedAt: new Date(),
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
 
   async updateUserCredits(userId: string, creditChange: number, description: string, type: string): Promise<User | undefined> {
@@ -452,6 +499,14 @@ export class MemStorage implements IStorage {
     });
 
     return updatedUser;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    return this.users.delete(id);
   }
 
   // Platforms
