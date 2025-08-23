@@ -1,11 +1,11 @@
 import express from "express";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-const publicDir = path.join(__dirname, "public");
+// process.cwd() is /app, as defined in the Dockerfile.
+// The server serves files from /app/dist/public.
+const publicDir = path.join(process.cwd(), "dist", "public");
 app.use(express.static(publicDir));
 
 // health & api routes here…
