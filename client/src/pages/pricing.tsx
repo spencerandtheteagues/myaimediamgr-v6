@@ -1,12 +1,12 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Sparkles, Zap, Crown, Building2, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
-import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { useLocation } from "wouter";
 
 interface SubscriptionPlan {
   id: string;
@@ -35,7 +35,9 @@ const CREDIT_COSTS = {
 
 export default function Pricing() {
   const { toast } = useToast();
-  const { data: user } = useQuery({ 
+  const [, navigate] = useLocation();
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const { data: user } = useQuery<{ subscriptionId?: string }>({ 
     queryKey: ["/api/auth/user"],
     retry: false,
     enabled: false // Don't automatically fetch user data
@@ -44,25 +46,10 @@ export default function Pricing() {
     queryKey: ["/api/subscription-plans"],
   });
 
-  const subscribeMutation = useMutation({
-    mutationFn: async (planId: string) => {
-      return apiRequest(`/api/subscribe/${planId}`, { method: "POST" });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Success!",
-        description: "Your subscription has been updated.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update subscription. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  const handleSubscribe = (planId: string) => {
+    // Navigate to Stripe payment page with plan details
+    navigate(`/subscribe?plan=${planId}&cycle=${billingCycle}`);
+  };
 
   const getPlanIcon = (planId: string) => {
     switch (planId) {
@@ -105,6 +92,26 @@ export default function Pricing() {
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Scale your social media presence with AI-powered content generation and management
         </p>
+        
+        {/* Billing Cycle Toggle */}
+        <div className="mt-6 flex items-center justify-center gap-4">
+          <Button
+            variant={billingCycle === 'monthly' ? 'default' : 'outline'}
+            onClick={() => setBillingCycle('monthly')}
+            size="sm"
+            data-testid="button-monthly"
+          >
+            Monthly
+          </Button>
+          <Button
+            variant={billingCycle === 'yearly' ? 'default' : 'outline'}
+            onClick={() => setBillingCycle('yearly')}
+            size="sm"
+            data-testid="button-yearly"
+          >
+            Yearly (Save 20%)
+          </Button>
+        </div>
         
         {/* Credit Calculator */}
         <div className="mt-8 p-6 bg-muted/50 rounded-lg max-w-3xl mx-auto">
@@ -152,24 +159,30 @@ export default function Pricing() {
                 <CardTitle>{plan.displayName}</CardTitle>
               </div>
               <div className="mt-4">
-                <div className="flex items-baseline">
-                  <span className="text-3xl font-bold">${formatPrice(plan.monthlyPrice)}</span>
-                  <span className="text-muted-foreground ml-2">/month</span>
-                </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  or ${formatPrice(plan.yearlyPrice)}/year (save {Math.round((1 - (parseFloat(plan.yearlyPrice) / (parseFloat(plan.monthlyPrice) * 12))) * 100)}%)
-                </div>
+                <span className="text-3xl font-bold">
+                  ${billingCycle === 'monthly' ? 
+                    formatPrice(plan.monthlyPrice.toString()) : 
+                    formatPrice(plan.yearlyPrice.toString())}
+                </span>
+                <span className="text-muted-foreground">
+                  /{billingCycle === 'monthly' ? 'month' : 'year'}
+                </span>
               </div>
-              <CardDescription className="mt-3">
-                <span className="font-semibold text-lg">{plan.creditsPerMonth.toLocaleString()}</span> credits/month
+              <CardDescription>
+                {plan.creditsPerMonth.toLocaleString()} credits/month
+                {billingCycle === 'yearly' && (
+                  <Badge variant="secondary" className="ml-2">
+                    Save 20%
+                  </Badge>
+                )}
               </CardDescription>
             </CardHeader>
 
             <CardContent className="flex-1">
-              <ul className="space-y-3">
+              <ul className="space-y-2">
                 {plan.features.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <li key={index} className="flex items-start">
+                    <Check className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                     <span className="text-sm">{feature}</span>
                   </li>
                 ))}
@@ -195,11 +208,12 @@ export default function Pricing() {
               <Button 
                 className="w-full" 
                 variant={plan.popular ? "default" : "outline"}
-                onClick={() => subscribeMutation.mutate(plan.id)}
-                disabled={subscribeMutation.isPending || user?.subscriptionId === plan.id}
+                onClick={() => handleSubscribe(plan.id)}
+                disabled={user?.subscriptionId === plan.id}
+                data-testid={`button-subscribe-${plan.id}`}
               >
                 {user?.subscriptionId === plan.id ? "Current Plan" : 
-                 plan.id === "free" ? "Start Free Trial" : "Subscribe Now"}
+                 plan.id === "free" ? "Start 7-Day Free Trial" : "Subscribe Now"}
               </Button>
             </CardFooter>
           </Card>
@@ -234,13 +248,13 @@ export default function Pricing() {
             <div>
               <h3 className="font-semibold mb-1">What payment methods do you accept?</h3>
               <p className="text-sm text-muted-foreground">
-                We accept all major credit cards, debit cards, and PayPal through our secure payment processor.
+                We accept all major credit cards and debit cards through our secure Stripe payment processor.
               </p>
             </div>
             <div>
               <h3 className="font-semibold mb-1">Is there a free trial?</h3>
               <p className="text-sm text-muted-foreground">
-                Yes! Start with our Free plan which includes 50 credits per month to test our features before upgrading.
+                Yes! The Free plan includes a 7-day trial with full access. You'll need to provide a valid credit card, but won't be charged during the trial period.
               </p>
             </div>
           </CardContent>

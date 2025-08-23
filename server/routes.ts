@@ -5,10 +5,14 @@ import { insertPostSchema, insertAiSuggestionSchema, insertCampaignSchema } from
 import { z } from "zod";
 import * as gcloudAI from "./gcloud-ai";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { registerStripeRoutes } from "./stripe-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   await setupAuth(app);
+  
+  // Register Stripe payment routes
+  registerStripeRoutes(app);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

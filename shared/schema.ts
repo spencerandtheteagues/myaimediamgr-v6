@@ -29,6 +29,10 @@ export const users = pgTable("users", {
   subscriptionStatus: varchar("subscription_status").default("free"), // free, trial, active, cancelled, expired
   subscriptionEndDate: timestamp("subscription_end_date"),
   totalCreditsUsed: integer("total_credits_used").notNull().default(0),
+  // Stripe fields
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  trialEndsAt: timestamp("trial_ends_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
