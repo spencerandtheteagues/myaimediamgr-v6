@@ -1,14 +1,31 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { dirname, resolve, join } from "node:path";
+import fs from "node:fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// 👉 change this to your actual client folder that CONTAINS index.html
-const clientRoot = resolve(__dirname, "client");
-// If yours is different use:
-// const clientRoot = resolve(__dirname, "myaimediamgr_project/myaimediamgr-frontend");
+// Candidates to try, in order. Add paths here if you move the frontend.
+const candidates = [
+  process.env.CLIENT_ROOT, // optional override
+  "client",
+  "myaimediamgr_project/myaimediamgr-frontend",
+  "frontend",
+  "apps/web",
+].filter(Boolean) as string[];
+
+function pickRoot() {
+  for (const rel of candidates) {
+    const abs = resolve(__dirname, rel);
+    if (fs.existsSync(join(abs, "index.html"))) return abs;
+  }
+  throw new Error(
+    `Could not find client 'index.html'. Tried: ${candidates.join(", ")}`
+  );
+}
+
+const clientRoot = pickRoot();
 
 export default defineConfig({
   root: clientRoot,
