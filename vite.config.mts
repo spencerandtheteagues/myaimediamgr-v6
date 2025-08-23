@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, normalizePath } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
@@ -6,9 +6,9 @@ import fs from "node:fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Candidates to try, in order. Add paths here if you move the frontend.
+// Try these in order; add/remove entries if your layout changes
 const candidates = [
-  process.env.CLIENT_ROOT, // optional override
+  process.env.CLIENT_ROOT,  // optional override
   "client",
   "myaimediamgr_project/myaimediamgr-frontend",
   "frontend",
@@ -20,16 +20,20 @@ function pickRoot() {
     const abs = resolve(__dirname, rel);
     if (fs.existsSync(join(abs, "index.html"))) return abs;
   }
-  throw new Error(
-    `Could not find client 'index.html'. Tried: ${candidates.join(", ")}`
-  );
+  throw new Error(`Could not find client 'index.html'. Tried: ${candidates.join(", ")}`);
 }
 
 const clientRoot = pickRoot();
+const srcAlias = normalizePath(resolve(clientRoot, "src"));
 
 export default defineConfig({
   root: clientRoot,
   plugins: [react()],
+  resolve: {
+    alias: [
+      { find: "@", replacement: srcAlias },
+    ],
+  },
   base: "/",
   build: {
     outDir: resolve(__dirname, "dist/public"),
