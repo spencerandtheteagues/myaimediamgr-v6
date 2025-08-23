@@ -19,7 +19,9 @@
     "lucide-react": "^0.400.0",
     "react-hook-form": "^7.52.1",
     "@stripe/react-stripe-js": "^2.7.3",
-    "@stripe/stripe-js": "^4.1.0"
+    "@stripe/stripe-js": "^4.1.0",
+    "@hookform/resolvers": "^3.9.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.2",
