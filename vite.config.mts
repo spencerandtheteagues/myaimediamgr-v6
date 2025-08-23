@@ -29,6 +29,11 @@ const srcAlias = normalizePath(resolve(clientRoot, "src"));
 export default defineConfig({
   root: clientRoot,
   plugins: [react()],
+  css: {
+    postcss: {
+      config: normalizePath(resolve(clientRoot, 'postcss.config.cjs')),
+    },
+  },
   resolve: {
     alias: [
       { find: "@", replacement: srcAlias },
