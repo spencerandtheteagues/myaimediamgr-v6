@@ -62,15 +62,12 @@ export function registerStripeRoutes(app: Express) {
         items: [{ 
           price_data: {
             currency: 'usd',
-            product_data: {
-              name: `${plan.displayName} - ${billingCycle === 'monthly' ? 'Monthly' : 'Yearly'}`,
-              description: `${plan.creditsPerMonth} credits per month`
-            },
+            product: plan.displayName,
             unit_amount: Math.round(amount * 100),
             recurring: {
               interval: billingCycle === 'monthly' ? 'month' : 'year'
             }
-          }
+          } as any
         }],
         payment_behavior: 'default_incomplete',
         payment_settings: { 
@@ -85,8 +82,8 @@ export function registerStripeRoutes(app: Express) {
         }
       });
 
-      const invoice = subscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent;
+      const invoice = (subscription as any).latest_invoice as Stripe.Invoice;
+      const paymentIntent = (invoice as any)?.payment_intent as Stripe.PaymentIntent;
 
       res.json({
         subscriptionId: subscription.id,
@@ -122,7 +119,7 @@ export function registerStripeRoutes(app: Express) {
       }
 
       // Get subscription from payment intent metadata
-      const invoiceId = paymentIntent.invoice as string;
+      const invoiceId = (paymentIntent as any).invoice as string;
       if (!invoiceId) {
         return res.status(400).json({ 
           success: false,
@@ -131,7 +128,7 @@ export function registerStripeRoutes(app: Express) {
       }
 
       const invoice = await stripe.invoices.retrieve(invoiceId);
-      const subscriptionId = invoice.subscription as string;
+      const subscriptionId = (invoice as any).subscription as string;
       
       if (!subscriptionId) {
         return res.status(400).json({ 
@@ -152,7 +149,7 @@ export function registerStripeRoutes(app: Express) {
       }
 
       // Calculate end date
-      const endDate = new Date(subscription.current_period_end * 1000);
+      const endDate = new Date((subscription as any).current_period_end * 1000);
       
       // Update user subscription in database
       const user = await storage.getUser(userId);
@@ -231,7 +228,7 @@ export function registerStripeRoutes(app: Express) {
 
       res.json({
         message: "Subscription cancelled successfully",
-        endsAt: new Date(subscription.current_period_end * 1000)
+        endsAt: new Date((subscription as any).current_period_end * 1000)
       });
     } catch (error: any) {
       console.error("Subscription cancellation error:", error);

@@ -38,9 +38,9 @@ export default function Settings() {
   });
 
   const [profileData, setProfileData] = useState({
-    fullName: user?.fullName || "",
+    fullName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : "",
     businessName: user?.businessName || "",
-    avatar: user?.avatar || "",
+    avatar: user?.profileImageUrl || "",
   });
 
   const [brandSettings, setBrandSettings] = useState({

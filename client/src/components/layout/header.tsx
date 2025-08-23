@@ -1,8 +1,9 @@
 import { useLocation } from "wouter";
-import { Bell, Plus, Coins, LogOut, User } from "lucide-react";
+import { Bell, Plus, Coins, LogOut, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
+import type { User } from "@shared/schema";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -53,7 +54,7 @@ const pageData = {
 
 export default function Header() {
   const [location] = useLocation();
-  const { user } = useAuth();
+  const { user } = useAuth() as { user: User | null | undefined; isLoading: boolean; isAuthenticated: boolean };
   const currentPage = pageData[location as keyof typeof pageData] || pageData["/"];
 
   const getInitials = (firstName?: string | null, lastName?: string | null, email?: string | null) => {
@@ -143,7 +144,7 @@ export default function Header() {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer">
-                  <User className="mr-2 h-4 w-4" />
+                  <UserIcon className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer" onClick={() => window.location.href = "/pricing"}>

@@ -302,6 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               keyMessages: campaign.keyMessages || [],
               callToAction: campaign.callToAction,
               platform: campaign.platform,
+              prompt: `Create engaging ${campaign.platform} content for ${campaign.businessName}`,
               visualStyle: campaign.visualStyle,
               colorScheme: campaign.colorScheme || undefined,
             },
@@ -539,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('AI generation error:', error);
-      res.status(500).json({ message: "Failed to generate AI content", error: error.message });
+      res.status(500).json({ message: "Failed to generate AI content", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
