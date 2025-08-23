@@ -4,15 +4,11 @@ module.exports = {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
-    // if you have shared/ui files elsewhere, add them here:
-    // "../shared/**/*.{js,ts,jsx,tsx}",
   ],
-  // Ensure base @apply works even if JIT doesn't see these in templates
   safelist: [
     "bg-background",
     "text-foreground",
     "border-border",
-    // (optional) commonly used tokens you may use in base/components
     "bg-card","text-card-foreground",
     "bg-muted","text-muted-foreground",
     "ring","ring-offset-background"
