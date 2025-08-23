@@ -23,6 +23,11 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true, ts: new Date().toISOString() });
 });
 
+  // Health check for Docker/Cloud run
+app.get("/health", (_req, res) => {
+  res.status(200).json({ ok: true, ts: new Date().toISOString() });
+});
+
   // Auth routes
   app.post(
     "/api/auth/replit",
