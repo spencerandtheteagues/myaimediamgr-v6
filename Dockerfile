@@ -24,6 +24,7 @@ RUN node -e "require.resolve('@vitejs/plugin-react'); console.log('OK: @vitejs/p
 
 # 3) Tailwind/PostCSS (only if you’re using Tailwind)
 RUN node -e "require.resolve('postcss'); require.resolve('tailwindcss'); console.log('OK: postcss + tailwindcss')"
+RUN node -e "require.resolve('wouter'); console.log('OK: wouter')"
 
 # 4) Show which config Vite sees (helps if it still can’t find index.html)
 RUN node -e "console.log('vite root=', require('path').resolve('client'))"
