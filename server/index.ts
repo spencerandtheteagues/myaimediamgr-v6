@@ -1,15 +1,18 @@
 import express from "express";
-import path from "node:path";
+import path from "path";
 
 const app = express();
+const cwd = process.cwd(); // ✅ not import.meta.url
 
-// process.cwd() is /app, as defined in the Dockerfile.
-// The server serves files from /app/dist/public.
-const publicDir = path.join(process.cwd(), "dist", "public");
+const publicDir = path.join(cwd, "dist", "public");
 
-app.use(express.static(publicDir));
+// static files (app.css, assets/*, etc.)
+app.use(express.static(publicDir, { maxAge: "1y", index: false }));
+
+// SPA fallback → always send the built index.html
 app.get("*", (_req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
 
-app.listen(process.env.PORT || 8080, () => console.log("Server listening"));
+const port = process.env.PORT || 8080;
+app.listen(port, () => console.log("listening on", port));
