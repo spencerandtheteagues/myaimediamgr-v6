@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
     "scripts": {
+    "prebuild": "tailwindcss -c client/tailwind.config.cjs -i client/src/index.css -o client/public/app.css --minify",
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build --config vite.config.mts",
     "build:server": "esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --external:lightningcss",
