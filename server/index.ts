@@ -1,21 +1,20 @@
 import express from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import session from "express-session";
 import passport from "passport";
 import MemoryStore from "memorystore";
 import connectPgSimple from "connect-pg-simple";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { authRouter, replitAuth } from "./replitAuth";
 import { registerRoutes } from "./routes";
 import { initializeStorage } from "./gcloud-ai";
-import { viteMiddleware } from "./vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const MemoryStoreInstance = MemoryStore(session);
 
-// --- MIDDLEWARE SETUP (Preserved from original) ---
+// --- MIDDLEWARE ---
 app.use(express.json());
 initializeStorage();
 
@@ -39,17 +38,13 @@ app.use(passport.session());
 app.use("/auth", authRouter);
 app.use(replitAuth);
 
-// --- API ROUTES (Preserved from original) ---
+// --- STATIC & API ROUTES ---
+const publicDir = path.resolve(__dirname, "..", "dist", "public");
+app.use(express.static(publicDir));
+
 registerRoutes(app);
 
-// --- STATIC FILE SERVING (Corrected logic from fix pack) ---
-const publicDir = path.resolve(__dirname, "..", "dist", "public");
-
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(publicDir));
-}
-
-// --- SPA FALLBACK (Corrected logic from fix pack) ---
+// --- SPA FALLBACK ---
 app.get("*", (_req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });

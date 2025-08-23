@@ -1,30 +1,24 @@
-// vite.config.mts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 
-// Treat these as DEV-ONLY. Never include on Railway prod.
-const isProd = process.env.NODE_ENV === "production"
-  || process.env.VERCEL_ENV === "production"
-  || process.env.RAILWAY_STATIC_URL
-  || process.env.CI;
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig(async () => {
-  const plugins = [react()];
+// 🔴 If your frontend folder is different, change this ONE line:
+const clientRoot = resolve(__dirname, "client");
 
-  // Only load Replit plugins in dev and when running on Replit.
-  if (!isProd && (process.env.REPL_ID || process.env.REPL_SLUG)) {
-    const cartographer = (await import("@replit/vite-plugin-cartographer")).default;
-    const errorModal = (await import("@replit/vite-plugin-runtime-error-modal")).default;
-    plugins.push(cartographer());
-    plugins.push(errorModal());
-  }
+// Emit to server-friendly location
+const outDir = resolve(__dirname, "dist/public");
 
-  return {
-    plugins,
-    base: "/",
-    build: {
-      sourcemap: false,
-      target: "es2020",
-    },
-  };
+export default defineConfig({
+  root: clientRoot,
+  plugins: [react()],
+  base: "/",
+  build: {
+    outDir,
+    emptyOutDir: true,
+    target: "es2020",
+    sourcemap: false,
+  },
 });
