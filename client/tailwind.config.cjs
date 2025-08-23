@@ -1,7 +1,22 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+    // if you have shared/ui files elsewhere, add them here:
+    // "../shared/**/*.{js,ts,jsx,tsx}",
+  ],
+  // Ensure base @apply works even if JIT doesn't see these in templates
+  safelist: [
+    "bg-background",
+    "text-foreground",
+    "border-border",
+    // (optional) commonly used tokens you may use in base/components
+    "bg-card","text-card-foreground",
+    "bg-muted","text-muted-foreground",
+    "ring","ring-offset-background"
+  ],
   theme: {
     container: { center: true, padding: "2rem", screens: { "2xl": "1400px" } },
     extend: {
