@@ -5,15 +5,7 @@ import { dirname, resolve, join } from "node:path";
 import fs from "node:fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// Try these in order; add/remove entries if your layout changes
-const candidates = [
-  process.env.CLIENT_ROOT,  // optional override
-  "client",
-  "myaimediamgr_project/myaimediamgr-frontend",
-  "frontend",
-  "apps/web",
-].filter(Boolean) as string[];
+const candidates = [process.env.CLIENT_ROOT, "client", "myaimediamgr_project/myaimediamgr-frontend", "frontend", "apps/web"].filter(Boolean) as string[];
 
 function pickRoot() {
   for (const rel of candidates) {
@@ -29,15 +21,9 @@ const srcAlias = normalizePath(resolve(clientRoot, "src"));
 export default defineConfig({
   root: clientRoot,
   plugins: [react()],
+  resolve: { alias: [{ find: "@", replacement: srcAlias }] },
   css: {
-    postcss: {
-      config: normalizePath(resolve(clientRoot, 'postcss.config.cjs')),
-    },
-  },
-  resolve: {
-    alias: [
-      { find: "@", replacement: srcAlias },
-    ],
+    postcss: resolve(clientRoot, "postcss.config.cjs"), // explicit; optional but safe
   },
   base: "/",
   build: {
