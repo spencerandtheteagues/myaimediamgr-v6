@@ -18,6 +18,10 @@ RUN npm install --package-lock-only --ignore-scripts --no-audit --no-fund  && np
 # (Optional) Sanity checks to fail fast if key deps are missing
 RUN node -e "require.resolve('react/jsx-runtime');              require.resolve('@vitejs/plugin-react');              require.resolve('@tanstack/react-query');              console.log('Sanity: react + plugin-react + react-query present')"
 
+# Add debug sanity checks to prove Tailwind is working
+RUN node -e "const fs=require('fs');console.log('TW CFG=',process.env.TAILWIND_CONFIG,'exists=',fs.existsSync(process.env.TAILWIND_CONFIG))"
+RUN npx tailwindcss -i client/src/index.css -o /tmp/check.css --config client/tailwind.config.cjs --content 'client/index.html,client/src/**/*.{js,ts,jsx,tsx}' && wc -c /tmp/check.css
+
 # Build: emits dist/public (client) + dist/index.cjs (server)
 # Ensure Tailwind uses the client config even if a root config exists
 ENV TAILWIND_CONFIG=/app/client/tailwind.config.cjs
