@@ -1,3 +1,4 @@
+// vite.config.mts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
@@ -5,10 +6,10 @@ import { dirname, resolve } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// 🔴 If your frontend folder is different, change this ONE line:
+// CHANGE THIS if your actual client folder is different:
 const clientRoot = resolve(__dirname, "client");
 
-// Emit to server-friendly location
+// Emit to a path the server will serve:
 const outDir = resolve(__dirname, "dist/public");
 
 export default defineConfig({

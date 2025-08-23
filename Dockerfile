@@ -6,13 +6,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# Copy sources
-COPY client ./client
-COPY server ./server
-COPY shared ./shared 2>/dev/null || true
-COPY vite.config.mts ./vite.config.mts
+# Copy source (no optional COPY tricks)
+COPY . .
 
-# Build client (uses vite.config.mts) + bundle server to dist/index.cjs
+# If you sometimes don't have a shared/ folder, just ensure the path exists
+# (this is safe even if the folder DID come from the build context)
+RUN mkdir -p /app/shared
+
+# Build client (uses vite.config.mts for root) + bundle server to dist/index.cjs
 RUN npm run build
 
 # -------- Runtime --------
