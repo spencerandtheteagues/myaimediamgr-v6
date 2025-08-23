@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Define the CSS variables that the theme in tailwind.config.cjs references */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -48,6 +49,7 @@
   }
 }
 
+/* Now it’s safe to @apply Tailwind classes that depend on theme tokens */
 @layer base {
   * { @apply border-border; }
   body { @apply bg-background text-foreground; }
