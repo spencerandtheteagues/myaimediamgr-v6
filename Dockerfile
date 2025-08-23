@@ -19,8 +19,6 @@ RUN npm install --package-lock-only --ignore-scripts --no-audit --no-fund  && np
 RUN node -e "require.resolve('react/jsx-runtime');              require.resolve('@vitejs/plugin-react');              require.resolve('@tanstack/react-query');              console.log('Sanity: react + plugin-react + react-query present')"
 
 # Build: emits dist/public (client) + dist/index.cjs (server)
-# Tell Tailwind exactly which config to use
-ENV TAILWIND_CONFIG=/app/client/tailwind.config.cjs
 RUN npm run build
 
 # -------- Runtime --------
