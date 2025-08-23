@@ -19,8 +19,9 @@ RUN npm install --package-lock-only --ignore-scripts --no-audit --no-fund  && np
 RUN node -e "require.resolve('react/jsx-runtime');              require.resolve('@vitejs/plugin-react');              require.resolve('@tanstack/react-query');              console.log('Sanity: react + plugin-react + react-query present')"
 
 # Build: emits dist/public (client) + dist/index.cjs (server)
-# Use a build argument to pass the Stripe key securely
+# Use a build argument to pass the Stripe key securely and set the Tailwind config path
 ARG VITE_STRIPE_PUBLIC_KEY
+ENV TAILWIND_CONFIG=/app/client/tailwind.config.cjs
 RUN echo "VITE_STRIPE_PUBLIC_KEY=${VITE_STRIPE_PUBLIC_KEY}" > /app/client/.env
 RUN npm run build
 
