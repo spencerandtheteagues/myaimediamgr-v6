@@ -1,39 +1,26 @@
-# Build stage
-# Force cache invalidation 2025-08-23-02
-FROM python:3.9-slim AS runtime
-
+# --- Stage 1: Frontend Builder ---
+FROM node:20-alpine AS frontend-builder
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
-
-# Install all dependencies including dev dependencies
-RUN npm ci
-
-# Copy source code
+RUN npm install
 COPY . .
-
-# Build the application
 RUN npm run build
 
-# Production stage
+# --- Stage 2: Production ---
 FROM node:20-alpine
-
 WORKDIR /app
 
 # Install ffmpeg for video processing
 RUN apk add --no-cache ffmpeg
 
-# Copy package files
+# Copy package files and install production dependencies
 COPY package*.json ./
-
-# Install only production dependencies
 RUN npm ci --only=production
 
-# Copy built application from builder stage
-COPY --from=builder /app/dist ./dist
+# Copy built assets from the builder stage
+COPY --from=frontend-builder /app/dist ./dist
 
-# Copy server files
+# Copy server and shared code
 COPY server ./server
 COPY shared ./shared
 
@@ -41,7 +28,7 @@ COPY shared ./shared
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Expose port 8080 (Google Cloud Run requirement)
+# Expose the port
 EXPOSE 8080
 
 # Health check
