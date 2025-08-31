@@ -5,7 +5,7 @@
   "type": "module",
     "scripts": {
         "build": "npm run build:client && npm run build:server",
-    "build:client": "vite build --config vite.config.mts",
+    "build:client": "cd client && vite build --config ../vite.config.mts",
     "build:server": "esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --external:lightningcss"
   },
   "dependencies": {
