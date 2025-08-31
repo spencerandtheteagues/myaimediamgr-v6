@@ -12,6 +12,9 @@ COPY package*.json ./
 # Install Node.js dependencies
 RUN npm install
 
+# Install pip for Python dependencies
+RUN apt-get update && apt-get install -y python3-pip
+
 # Install Python dependencies for the backend service
 COPY myaimediamgr_project/myaimediamgr-backend/requirements.txt ./myaimediamgr_project/myaimediamgr-backend/requirements.txt
 RUN pip install --no-cache-dir -r myaimediamgr_project/myaimediamgr-backend/requirements.txt
