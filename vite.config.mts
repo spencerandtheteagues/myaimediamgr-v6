@@ -15,7 +15,7 @@ export default defineConfig({
   },
   build: {
     // This ensures the output goes to a predictable directory.
-    outDir: "dist/public",
+    outDir: "../dist/public",
     emptyOutDir: true,
   },
   // This is needed to correctly serve the app from the Node.js server.
