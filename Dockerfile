@@ -1,29 +1,34 @@
-# Stage 1: Builder
-FROM node:20-alpine AS builder
+# ---- Base Image ----
+# Use an official Node.js runtime as a parent image.
+# This image also includes Python, which is convenient for our multi-language setup.
+FROM node:18-bullseye
+
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy root package manifests and install all dependencies
-COPY package.json package-lock.json* ./
+# ---- Dependencies ----
+# Copy package.json and package-lock.json first to leverage Docker layer caching
+COPY package*.json ./
+# Install Node.js dependencies
 RUN npm install
 
-# Copy the rest of the source code
+# Install Python dependencies for the backend service
+COPY myaimediamgr_project/myaimediamgr-backend/requirements.txt ./myaimediamgr_project/myaimediamgr-backend/requirements.txt
+RUN pip install --no-cache-dir -r myaimediamgr_project/myaimediamgr-backend/requirements.txt
+
+# ---- Source Code ----
+# Copy the rest of the application's source code
 COPY . .
 
-# Build the client and server
+# ---- Build Frontend ----
+# Build the React client for production
 RUN npm run build
 
-# Stage 2: Production
-FROM node:20-alpine
-WORKDIR /app
-ENV NODE_ENV=production
-
-# Copy production dependencies from the builder stage
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-
-# Copy the built application artifacts
-COPY --from=builder /app/dist ./dist
-
-# Expose the port and define the start command
+# ---- Expose Ports ----
+# Expose the port the Node.js server will run on
+# The Python server will also run, but we'll route to it internally or expose another port.
 EXPOSE 8080
-CMD [ "node", "dist/index.cjs" ]
+
+# ---- Start Command ----
+# Use the start script to run both the Node.js and Python servers
+CMD ["./start.sh"]
