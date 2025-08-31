@@ -2,20 +2,22 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
-const r = (p: string) => path.resolve(__dirname, p);
-
+// https://vitejs.dev/config/
 export default defineConfig({
-  root: r("client"),
-  publicDir: r("client/public"),
   plugins: [react()],
-  css: {
-    postcss: r("client/postcss.config.cjs"),
-  },
+  // This 'resolve' block is the fix.
+  // It tells Vite that any import starting with "@"
+  // should be resolved relative to the 'client/src' directory.
   resolve: {
-    alias: { "@": r("client/src") },
+    alias: {
+      "@": path.resolve(__dirname, "./client/src"),
+    },
   },
   build: {
-    outDir: r("dist/public"),
+    // This ensures the output goes to a predictable directory.
+    outDir: "dist/public",
     emptyOutDir: true,
   },
+  // This is needed to correctly serve the app from the Node.js server.
+  root: "client",
 });
