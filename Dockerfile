@@ -1,37 +1,29 @@
-# -------- Builder --------
+# Stage 1: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Manifests first
-COPY package.json package-lock.json ./
+# Copy root package manifests and install all dependencies
+COPY package.json package-lock.json* ./
+RUN npm install
 
-# Copy everything once (no optional COPY tricks)
+# Copy the rest of the source code
 COPY . .
 
-# Sync lockfile to the (possibly updated) package.json, then clean install
-RUN npm install --package-lock-only --ignore-scripts --no-audit --no-fund  && npm ci
-
-# Build: emits dist/public (client) + dist/index.cjs (server)
-# Ensure Tailwind uses the client config even if a root config exists
-ENV TAILW-IND_CONFIG=/app/client/tailwind.config.cjs
-# Use a build argument to pass the Stripe key securely
-ARG VITE_STRIPE_PUBLIC_KEY
-RUN echo "VITE_STRIPE_PUBLIC_KEY=${VITE_STRIPE_PUBLIC_KEY}" > /app/client/.env
+# Build the client and server
 RUN npm run build
-RUN ls -l /app/client/public
 
-# -------- Runtime --------
+# Stage 2: Production
 FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Use the SAME manifest/lock that produced the build
+# Copy production dependencies from the builder stage
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/package-lock.json ./
-RUN npm ci --omit=dev
+COPY --from=builder /app/node_modules ./node_modules
 
-# Copy built artifacts
+# Copy the built application artifacts
 COPY --from=builder /app/dist ./dist
 
+# Expose the port and define the start command
 EXPOSE 8080
-CMD ["node", "dist/index.cjs"]
+CMD [ "node", "dist/index.cjs" ]
